@@ -1,0 +1,59 @@
+﻿<UserControl
+    x:Class="CloudDriveUI.Views.SynchFileView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:local="clr-namespace:CloudDriveUI.Views"
+    xmlns:local_converter="clr-namespace:CloudDriveUI.Converters"
+    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes">
+
+    <UserControl.Resources>
+        <ResourceDictionary Source="ResourceDictionary.xaml" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  标题栏，显示文件路径  -->
+        <local:FileRegionTitleBar />
+
+        <!--  内容栏，显示文件列表  -->
+        <DataGrid
+            Grid.Row="1"
+            ItemsSource="{Binding FileItems, Converter={StaticResource FileListItemsConverter}, ConverterParameter=SynchFileView, Mode=OneWay}"
+            Style="{StaticResource FileListViewStyle}">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="MouseDoubleClick">
+                    <i:InvokeCommandAction Command="{Binding OpenDirCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=CurrentItem.Id}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn
+                    Width="2*"
+                    CellTemplate="{StaticResource FileLiseViewNameCol}"
+                    Header="名称"
+                    Selector.IsSelected="False" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding LocalUpdate}"
+                    Header="本地修改时间" />
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding RemoteUpdate}"
+                    Header="云端修改时间" />
+
+                <DataGridTextColumn
+                    Width="*"
+                    Binding="{Binding Size}"
+                    Header="大小" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+    </Grid>
+
+
+</UserControl>
