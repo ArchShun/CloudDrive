@@ -21,4 +21,10 @@
 	  <ProjectReference Include="..\BDCloudDrive\BDCloudDrive.csproj" />
 	  <ProjectReference Include="..\CloudDrive\CloudDrive.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="config.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
 </Project>

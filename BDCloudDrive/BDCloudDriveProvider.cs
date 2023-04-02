@@ -33,6 +33,7 @@ public class BDCloudDriveProvider : ICloudDriveProvider
     private readonly ILogger logger;
     private readonly IOptionsSnapshot<BDConfig> option;
     private UserInfo? userInfo;
+    private bool hasAuthorize = false;
 
     public BDCloudDriveProvider(IMemoryCache cache, ILogger<BDCloudDriveProvider> logger, IOptionsSnapshot<BDConfig> option)
     {
@@ -45,7 +46,10 @@ public class BDCloudDriveProvider : ICloudDriveProvider
     {
         get
         {
-            Authorize();
+            if (option.Value.AccessToken == null || !hasAuthorize)
+            {
+                Authorize();
+            }
             return option.Value.AccessToken!;
         }
     }
@@ -56,40 +60,62 @@ public class BDCloudDriveProvider : ICloudDriveProvider
     /// <returns></returns>
     public void Authorize()
     {
-        if (option.Value != null) { return; }
-        // 获取授权
-        var clientId = "byOpxGCWQ3Q5vLVls74NMbv8";
-        var redirect = "oob";
-        var url = $"http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id={clientId}&redirect_uri={redirect}&scope=basic,netdisk";
-        // 打开默认浏览器访问网址获取授权
-        string? kstr = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\")?.GetValue("ProgId")?.ToString();
-        if (kstr != null)
+        // 验证 AccessToken 是否可用
+        if (option.Value.AccessToken != null && !hasAuthorize)
         {
-            var s = Registry.GetValue(@"HKEY_CLASSES_ROOT\" + kstr + @"\shell\open\command", null, null)?.ToString() ?? "";
-            var match = Regex.Match(s, "[ABCD]:.*\\.exe", RegexOptions.IgnorePatternWhitespace & RegexOptions.IgnoreCase);
-            if (match.Success)
+            var url = $"https://pan.baidu.com/rest/2.0/xpan/nas?access_token={option.Value.AccessToken}&method=uinfo";
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var response = client.Send(request);
+            var bytes = new List<byte>();
+            var stream = response.Content.ReadAsStream();
+            var buffer = new byte[10240];
+            var count = stream.Read(buffer, 0, buffer.Length);
+            while (count > 0)
             {
-                string ie = match.Value;
-                _ = Process.Start(ie, url);
-
-                var result = MessageBox.Show("复制授权成功后的跳转网页地址", "access_token", MessageBoxButton.OKCancel);
-                while (result == MessageBoxResult.OK)
+                bytes.AddRange(count < buffer.Length ? buffer.Take(count) : buffer);
+                count = stream.Read(buffer, 0, buffer.Length);
+            }
+            var str = Encoding.Default.GetString(bytes.ToArray());
+            var json = JsonNode.Parse(str);
+            hasAuthorize = (json != null && json["errno"]?.GetValue<int>() == 0);
+        }
+        if (option.Value.AccessToken == null)
+        {
+            // 获取授权
+            var clientId = "byOpxGCWQ3Q5vLVls74NMbv8";
+            var redirect = "oob";
+            var url = $"http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id={clientId}&redirect_uri={redirect}&scope=basic,netdisk";
+            // 打开默认浏览器访问网址获取授权
+            string? kstr = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\")?.GetValue("ProgId")?.ToString();
+            if (kstr != null)
+            {
+                var s = Registry.GetValue(@"HKEY_CLASSES_ROOT\" + kstr + @"\shell\open\command", null, null)?.ToString() ?? "";
+                var match = Regex.Match(s, "[ABCD]:.*\\.exe", RegexOptions.IgnorePatternWhitespace & RegexOptions.IgnoreCase);
+                if (match.Success)
                 {
-                    var txt = Clipboard.GetText();
-                    if (!string.IsNullOrEmpty(txt))
+                    string ie = match.Value;
+                    _ = Process.Start(ie, url);
+
+                    var result = MessageBox.Show("复制授权成功后的跳转网页地址", "access_token", MessageBoxButton.OKCancel);
+                    while (result == MessageBoxResult.OK)
                     {
-                        var m = Regex.Match(txt, "(?<=access_token=).*?(?=&)");
-                        if (m.Success)
+                        var txt = Clipboard.GetText();
+                        if (!string.IsNullOrEmpty(txt))
                         {
-                            option.Value.AccessToken = m.Value;
-                            return;
+                            var m = Regex.Match(txt, "(?<=access_token=).*?(?=&)");
+                            if (m.Success)
+                            {
+                                option.Value.AccessToken = m.Value;
+                                hasAuthorize = true;
+                            }
                         }
+                        result = MessageBox.Show("获取 access_token 失败，重新复制授权成功后的跳转网页地址，是否重试？", "access_token", MessageBoxButton.OKCancel);
                     }
-                    result = MessageBox.Show("获取 access_token 失败，重新复制授权成功后的跳转网页地址，是否重试？", "access_token", MessageBoxButton.OKCancel);
                 }
             }
         }
-        throw new AuthenticationException("百度网盘授权失败！");
+        if (!hasAuthorize)
+            throw new AuthenticationException("百度网盘授权失败！");
     }
 
 

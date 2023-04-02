@@ -9,12 +9,11 @@ namespace CloudDriveUI.ViewModels;
 
 public class MainWindowViewModel : BindableBase
 {
-    private readonly ICloudDriveProvider cloudDrive;
     private List<OperationItem> operationItems;
     private string title;
     private UserInfo? userInfo;
 
-    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, IOptionsSnapshot<AppConfig> options)
+    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive)
     {
         title = "CloudDrive";
         operationItems = new List<OperationItem>()
@@ -22,8 +21,10 @@ public class MainWindowViewModel : BindableBase
             new OperationItem() { Name = "个人中心", Icon = "AccountCogOutline" }
         };
         regionManager.RegisterViewWithRegion("NavigateRegion", "NavigationBar");
-        this.cloudDrive = cloudDrive;
+
+        UserInfo = Task.Run(cloudDrive.GetUserInfoAsync).Result;
     }
+
 
     public string Title
     {
@@ -42,10 +43,6 @@ public class MainWindowViewModel : BindableBase
     {
         get
         {
-            if(userInfo == null)
-            {
-                userInfo = cloudDrive.GetUserInfoAsync().Result;
-            }
             return userInfo;
         }
         private set { userInfo = value; RaisePropertyChanged(); }
