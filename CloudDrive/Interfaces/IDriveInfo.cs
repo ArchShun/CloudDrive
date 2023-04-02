@@ -1,4 +1,5 @@
 ﻿using CloudDrive.Entities;
+using System.Threading.Tasks;
 
 namespace CloudDrive.Interfaces;
 
@@ -8,10 +9,10 @@ public interface IDriveInfo
     /// 获取用户信息
     /// </summary>
     /// <returns></returns>
-    public UserInfo? GetUserInfo();
+    public Task<UserInfo?> GetUserInfoAsync();
     /// <summary>
     /// 获取云盘信息
     /// </summary>
     /// <returns></returns>
-    public CloudDriveInfo? GetDriveInfo();
+    public Task<CloudDriveInfo?> GetDriveInfoAsync();
 }

@@ -6,7 +6,7 @@ namespace CloudDriveUI.ViewModels;
 public class NavigationBarViewModel : BindableBase
 {
     private readonly IRegionManager regionManager;
-    public NavigationBarViewModel(ICloudDrive cloudDrive, IRegionManager regionManager)
+    public NavigationBarViewModel(ICloudDriveProvider cloudDrive, IRegionManager regionManager)
     {
         this.cloudDrive = cloudDrive;
         SelectedIndex = 0;
@@ -18,7 +18,7 @@ public class NavigationBarViewModel : BindableBase
 
     }
 
-    private readonly ICloudDrive cloudDrive;
+    private readonly ICloudDriveProvider cloudDrive;
 
     public DelegateCommand OpenCommand { get; }
     public List<string> ItemsList { get; } = new List<string>() { "文件", "同步空间" };//,"相册", "收藏夹", "密码箱", "传输列表" };

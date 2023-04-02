@@ -18,7 +18,7 @@ class CloudFileViewModel : FileViewBase
 
 
 
-    public CloudFileViewModel(ICloudDrive cloudDrive) : base(cloudDrive)
+    public CloudFileViewModel(ICloudDriveProvider cloudDrive) : base(cloudDrive)
     {
         SetFileItemsAsync();
     }

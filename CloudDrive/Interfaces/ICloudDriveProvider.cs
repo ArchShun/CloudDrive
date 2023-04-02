@@ -1,10 +1,9 @@
 ﻿using CloudDrive.Entities;
+using System.Threading.Tasks;
 
 namespace CloudDrive.Interfaces;
 
 public interface ICloudDriveProvider : IFileInfo,IFileManager,IDriveInfo
 {
-    public UserInfo? UserInfo { get; set; }
-    public CloudDriveInfo? DriveInfo { get; set; }
 
 }

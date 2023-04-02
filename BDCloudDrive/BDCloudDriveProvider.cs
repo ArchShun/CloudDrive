@@ -1,20 +1,27 @@
 ﻿using BDCloudDrive.Entities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Mail;
+using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Policy;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Input;
 
 namespace BDCloudDrive;
 
@@ -24,38 +31,36 @@ public class BDCloudDriveProvider : ICloudDriveProvider
 
     private readonly IMemoryCache cache;
     private readonly ILogger logger;
-
-    public BDCloudDriveProvider(IMemoryCache cache, ILogger<BDCloudDriveProvider> logger)
-    {
-        Authorize();
-        this.cache = cache;
-        this.logger = logger;
-    }
-
+    private readonly IOptionsSnapshot<BDConfig> option;
     private UserInfo? userInfo;
 
-    public string? AccessToken { get; private set; }
+    public BDCloudDriveProvider(IMemoryCache cache, ILogger<BDCloudDriveProvider> logger, IOptionsSnapshot<BDConfig> option)
+    {
+        this.cache = cache;
+        this.logger = logger;
+        this.option = option;
+    }
+
+    private string AccessToken
+    {
+        get
+        {
+            Authorize();
+            return option.Value.AccessToken!;
+        }
+    }
 
     /// <summary>
     /// 云盘授权
     /// </summary>
     /// <returns></returns>
-    private bool Authorize()
+    public void Authorize()
     {
+        if (option.Value != null) { return; }
         // 获取授权
         var clientId = "byOpxGCWQ3Q5vLVls74NMbv8";
         var redirect = "oob";
         var url = $"http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id={clientId}&redirect_uri={redirect}&scope=basic,netdisk";
-
-        // 查看是否有授权
-        if (File.Exists(clientId + ".bdtoken"))
-        {
-            AccessToken = File.ReadAllText(clientId + ".bdtoken");
-            var json = Task.Run(() => HttpClientUtils.GetJsonNodeAsync($"https://pan.baidu.com/rest/2.0/xpan/nas?access_token={AccessToken}&method=uinfo").Result).Result;
-            //JsonObject? json = JsonNode.Parse(res)?.AsObject();
-            if (json != null && json["errno"]!.GetValue<int>() == 0)
-                return true;
-        }
         // 打开默认浏览器访问网址获取授权
         string? kstr = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice\")?.GetValue("ProgId")?.ToString();
         if (kstr != null)
@@ -65,8 +70,7 @@ public class BDCloudDriveProvider : ICloudDriveProvider
             if (match.Success)
             {
                 string ie = match.Value;
-                Process process = System.Diagnostics.Process.Start(ie, url);
-
+                _ = Process.Start(ie, url);
 
                 var result = MessageBox.Show("复制授权成功后的跳转网页地址", "access_token", MessageBoxButton.OKCancel);
                 while (result == MessageBoxResult.OK)
@@ -77,50 +81,18 @@ public class BDCloudDriveProvider : ICloudDriveProvider
                         var m = Regex.Match(txt, "(?<=access_token=).*?(?=&)");
                         if (m.Success)
                         {
-                            AccessToken = m.Value;
-                            using var f = File.CreateText(clientId + ".bdtoken");
-                            f.Write(AccessToken);
-                            return true;
+                            option.Value.AccessToken = m.Value;
+                            return;
                         }
                     }
                     result = MessageBox.Show("获取 access_token 失败，重新复制授权成功后的跳转网页地址，是否重试？", "access_token", MessageBoxButton.OKCancel);
                 }
             }
         }
-
-        return false;
+        throw new AuthenticationException("百度网盘授权失败！");
     }
 
 
-    public UserInfo? UserInfo
-    {
-        get
-        {
-            if (userInfo == null && AccessToken != null)
-            {
-                var json = Task.Run(() => HttpClientUtils.GetJsonNodeAsync($"https://pan.baidu.com/rest/2.0/xpan/nas?access_token={AccessToken}&method=uinfo").Result).Result;
-                if (json != null)
-                {
-                    var n = json["avatar_url"]?.GetValue<string>();
-                    var user = new UserInfo()
-                    {
-                        AvatarUrl = json["avatar_url"]?.GetValue<string>(),
-                        Name = json["baidu_name"]?.GetValue<string>(),
-                        Id = (int)(json["uk"] ?? -1)
-                    };
-                    if (user.Id != -1)
-                    {
-                        this.userInfo = user;
-                    }
-                }
-            }
-            return this.userInfo;
-        }
-        set
-        {
-            throw new NotImplementedException();
-        }
-    }
     public CloudDriveInfo? DriveInfo { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
 
@@ -157,12 +129,12 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         if (info != null && info.XData.TryGetValue("dlink", out var dlink))
         {
             var url = $"{dlink}&access_token={AccessToken}";
-            var headers = new Dictionary<string, string>() { { "User-Agent", "pan.baidu.com" } };
-            var response = await HttpClientUtils.GetAsync(url, headers);
+            client.DefaultRequestHeaders.Add("User-Agent", "pan.baidu.com");
+            var response = await client.GetAsync(url);
             while (response.StatusCode is System.Net.HttpStatusCode.Redirect)
             {
                 if (response.Headers.Location == null) break;
-                response = await HttpClientUtils.GetAsync(response.Headers.Location);
+                response = await client.GetAsync(response.Headers.Location);
             }
             if (response.IsSuccessStatusCode)
             {
@@ -182,7 +154,7 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         return false;
     }
 
-    public CloudDriveInfo? GetDriveInfo()
+    public Task<CloudDriveInfo?> GetDriveInfoAsync()
     {
         throw new NotImplementedException();
     }
@@ -199,7 +171,8 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         if (cache.TryGetValue<CloudFileInfo>(path, out var info) && info != null)
         {
             var url = $"http://pan.baidu.com/rest/2.0/xpan/multimedia?method=filemetas&access_token={AccessToken}&fsids=[{info.Id}]&dlink=1&thumb=1";
-            var json = await HttpClientUtils.GetJsonNodeAsync(url);
+            var response = await client.GetAsync(url);
+            var json = JsonNode.Parse(await response.Content.ReadAsStringAsync());
             if (json != null && json["errno"]?.GetValue<int>() == 0)
             {
                 var arr = json["list"]!.AsArray();
@@ -221,10 +194,8 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         if (string.IsNullOrEmpty(path) || path == "." || path == @"\")
             path = "/";
         var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=list&dir={path}&access_token={AccessToken}";
-        var res = await HttpClientUtils.GetJsonNodeAsync(url);
-
-        var json = JsonNode.Parse(res?.ToString() ?? "");
-
+        var response = await client.GetAsync(url);
+        var json = JsonNode.Parse(await response.Content.ReadAsStringAsync());
         if (json != null && json["errno"]?.GetValue<int>() == 0)
         {
             ret = json["list"]!.AsArray().Select(node => new CloudFileInfo()
@@ -238,7 +209,7 @@ public class BDCloudDriveProvider : ICloudDriveProvider
                 LocalCtime = node["local_ctime"]?.GetValue<long>(),
                 LocalMtime = node["local_mtime"]?.GetValue<long>(),
                 IsDir = node["isdir"]?.GetValue<int>() == 1,
-                Category = FileTypeDict.GetValueOrDefault<int, FileType>(node["category"]!.GetValue<int>(), FileType.Other)
+                Category = FileTypeDict.GetValueOrDefault(node["category"]!.GetValue<int>(), FileType.Other)
             }).ToList();
         }
 
@@ -256,9 +227,29 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         { 1,FileType.Video },{2,FileType.Audio},{3,FileType.Picture},{4,FileType.Document},{5,FileType.Application},{6,FileType.Other},{7,FileType.BitTorrent}
     };
 
-    public UserInfo? GetUserInfo()
+    public async Task<UserInfo?> GetUserInfoAsync()
     {
-        return this.UserInfo;
+        if (userInfo == null)
+        {
+            var url = $"https://pan.baidu.com/rest/2.0/xpan/nas?access_token={AccessToken}&method=uinfo";
+            var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            var json = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+            if (json != null)
+            {
+                var user = new UserInfo()
+                {
+                    AvatarUrl = json["avatar_url"]?.GetValue<string>(),
+                    Name = json["baidu_name"]?.GetValue<string>(),
+                    Id = (int)(json["uk"] ?? -1)
+                };
+                if (user.Id != -1)
+                {
+                    userInfo = user;
+                }
+            }
+        }
+        return userInfo;
     }
 
     public CloudFileInfo? Remove(string src, string dest)
@@ -304,13 +295,15 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         if (slice_md5 != null) payload += "&slice_md5=" + slice_md5;
         if (local_ctime != null) payload += "&local_ctime=" + local_ctime.Value;
         if (local_mtime != null) payload += "&local_mtime=" + local_mtime.Value;
-        var response = await client.PostAsync(url, new StringContent(payload));
+
+        var response = await client.PostAsync(url, new StringContent(payload, new MediaTypeHeaderValue("application/x-www-form-urlencoded")));
         response.EnsureSuccessStatusCode();
         var res = await response.Content.ReadFromJsonAsync<PreCreateResult>();
         if (res == null) throw new JsonException("上传结果数据解析错误");
         else if (res.Errno != 0) throw new BDError(res.Errno);
         return res;
     }
+
     /// <summary>
     /// 分片上传
     /// </summary>
@@ -323,50 +316,35 @@ public class BDCloudDriveProvider : ICloudDriveProvider
     /// <exception cref="JsonException">响应数据解析错误</exception>
     /// <exception cref="ArgumentException">传入参数错误</exception>
     /// <exception cref="BDError">错误码</exception>
-    private async Task<SliceUploadResult> SliceUploadAsync(string access_token, string path, string uploadid, int partseq, byte[] bytes)
+    private static async Task<SliceUploadResult> SliceUploadAsync(string access_token, string path, string uploadid, int partseq, byte[] bytes)
     {
-        //var curlcmd = $"curl -F 'file=E:\\Test\\upload_test.txt' https://d.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&access_token={access_token}&path={path}&type=tmpfile&uploadid={uploadid}&partseq={partseq} ";
-        //Process tmpprocess = new Process();
-        //tmpprocess.StartInfo.FileName = curlcmd;//设定需要执行的命令
-        //tmpprocess.StartInfo.Arguments = cmdarg;
-        //tmpprocess.StartInfo.UseShellExecute = false;//不使用系统外壳程序启动
-        //tmpprocess.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        //tmpprocess.StartInfo.RedirectStandardInput = true;//不重定向输入
-        //tmpprocess.StartInfo.RedirectStandardOutput = true; //不重定向输出
-        //tmpprocess.StartInfo.RedirectStandardError = false;
-        //tmpprocess.StartInfo.CreateNoWindow = true;//不创建窗口
-
         var url = $"https://d.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&access_token={access_token}&path={path}&type=tmpfile&uploadid={uploadid}&partseq={partseq} ";
 
 
-        //var request = new HttpRequestMessage(HttpMethod.Post,url);
-
-        //MultipartFormDataContent multiContent = new MultipartFormDataContent("858b48f2a04fc4fd06a2ac236dd25b18");
-        //multiContent.Headers.ContentType.MediaType = "multipart/form-data";
-        //multiContent.Add(new StringContent("--858b48f2a04fc4fd06a2ac236dd25b18 Content-Disposition: form-data;"), "file",path);
-        //multiContent.Add(new ByteArrayContent(bytes,0,bytes.Length));
-        //multiContent.Add(new StringContent("--858b48f2a04fc4fd06a2ac236dd25b18--"));
-        //request.Content = multiContent;
-
-        //var RequestContent = new StreamContent(new MemoryStream(bytes));
-        //var RequestContent = new ByteArrayContent(bytes);
-
-        //RequestContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        //request.Content = RequestContent;
-
-        //var response =await client.SendAsync(request);
-        var content = new ByteArrayContent(bytes, 0, bytes.Length);
-        content.Headers.ContentType=new MediaTypeHeaderValue("multipart/form-data");
-        var response = await client.PostAsync(url,content );
-
+        /* 使用 MultipartFormDataContent 上传数据
+            Content-Type: multipart/form-data; boundary=858b48f2a04fc4fd06a2ac236dd25b18
+            --858b48f2a04fc4fd06a2ac236dd25b18 Content-Disposition: form-data; name="file"; filename="file.mp4" Content-Type: application/octet-stream
+            字节流
+            --858b48f2a04fc4fd06a2ac236dd25b18--
+         */
+        MultipartFormDataContent multiContent = new MultipartFormDataContent();
+        var content = new ByteArrayContent(bytes);
+        content.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+        {
+            Name = "file",
+            FileName = path // 必须传入路径，否则会报错
+        };
+        multiContent.Add(content);
+        var response = await client.PostAsync(url, multiContent);
         response.EnsureSuccessStatusCode();
-        var str = await response.Content.ReadAsStringAsync();
-        var res = await response.Content.ReadFromJsonAsync<SliceUploadResult>();
+        var stream = await response.Content.ReadAsStreamAsync();
+        var str = new StreamReader(stream).ReadToEnd();
+        var res = JsonSerializer.Deserialize<SliceUploadResult>(str, new JsonSerializerOptions(JsonSerializerDefaults.Web));
         if (res == null) throw new JsonException("上传结果数据解析错误");
         else if (res.Errno != 0) throw new BDError(res.Errno);
         return res;
-
     }
+
     /// <summary>
     /// 创建文件
     /// </summary>
@@ -382,13 +360,12 @@ public class BDCloudDriveProvider : ICloudDriveProvider
     /// <returns>创建结果</returns>
     /// <exception cref="JsonException">响应数据解析错误</exception>
     /// <exception cref="BDError">错误码</exception>
-    private async Task<CreateResult> CreateAsync(string access_token, string path, long size, bool isdir, string[] block_list, string uploadid, int rtype = 1, long? local_ctime = null, long? local_mtime = null)
+    private static async Task<CreateResult> CreateAsync(string access_token, string path, long size, bool isdir, string[] block_list, string uploadid, int rtype = 1, long? local_ctime = null, long? local_mtime = null)
     {
-        var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=create&&access_token={access_token} ";
-        var payload = $"path={path}&size={size}&isdir={(isdir ? 1 : 0)}&autoinit=1&rtype={rtype}&block_list={JsonSerializer.Serialize(block_list)}&uploadid={uploadid}";
+        var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=create&access_token={access_token}";
+        var payload = $"path={path}&size={size}&isdir={(isdir ? 1 : 0)}&rtype={rtype}&uploadid={uploadid}&block_list={JsonSerializer.Serialize(block_list)}";
         if (local_ctime != null) payload += "&local_ctime=" + local_ctime.Value;
         if (local_mtime != null) payload += "&local_mtime=" + local_mtime.Value;
-
         var response = await client.PostAsync(url, new StringContent(payload));
         response.EnsureSuccessStatusCode();
         var res = await response.Content.ReadFromJsonAsync<CreateResult>();
@@ -403,30 +380,34 @@ public class BDCloudDriveProvider : ICloudDriveProvider
         {
             try
             {
-                // 预上传
-                var blockList = new List<string>();
-                var partFiles = new List<byte[]>();
-                var buffer = new byte[1024 * 1024 * 4];
-                using (var fileStream = info.OpenRead())
+                const int max = 1024 * 1024 * 4; // 分片大小
+                var md5List = new List<string>(); // md5 
+                using var fileStream = info.OpenRead();
+                var buffer = new byte[max];
+                // 计算分片 md5
+                while (true)
                 {
-                    while (fileStream.Read(buffer) > 0)
-                    {
-                        partFiles.Add(buffer);
-                        blockList.Add(BitConverter.ToString(MD5.HashData(buffer)).Replace("-", "").ToLower());
-                    }
+                    var count = fileStream.Read(buffer);
+                    md5List.Add(BitConverter.ToString(MD5.HashData(count < max ? buffer.Take(count).ToArray() : buffer)).Replace("-", "").ToLower());
+                    if (count < max) break;
                 }
+                // 上传文件
+                var block_list = md5List.ToArray();
                 var isdir = (info.Attributes & FileAttributes.Directory) > 0;
                 var local_ctime = DateTimeUtils.GetTimeSpan(info.CreationTime);
                 var local_mtime = DateTimeUtils.GetTimeSpan(info.LastWriteTime);
-                var retype = 3;
-                PreCreateResult preCreateResult = await PreCreateAsync(AccessToken, dest, info.Length, blockList.ToArray(), isdir, retype, local_ctime: local_ctime, local_mtime: local_mtime);
-                foreach (var partseq in preCreateResult.Block_list)
+                var rtype = 3; // 覆盖重名
+                PreCreateResult preCreateResult = await PreCreateAsync(AccessToken, dest, info.Length, block_list, isdir, rtype, local_ctime: local_ctime, local_mtime: local_mtime);
+                // 如果文件小于4M，返回的 Block_List为空
+                var arr = preCreateResult.Block_List.Length == 0 ? new int[1] { 0 } : preCreateResult.Block_List;
+                fileStream.Position = 0;
+                // 循环读取 byte[] 分片上传
+                foreach (var partseq in arr)
                 {
-
-
-                    SliceUploadResult sliceUploadResult = await SliceUploadAsync(AccessToken, dest, preCreateResult.Uploadid, partseq, partFiles[partseq].ToArray());
+                    var count = fileStream.Read(buffer);
+                    SliceUploadResult sliceUploadResult = await SliceUploadAsync(AccessToken, dest, preCreateResult.Uploadid, partseq, count < max ? buffer.Take(count).ToArray() : buffer);
                 }
-                CreateResult createResult = await CreateAsync(AccessToken, dest, info.Length, isdir, blockList.ToArray(), preCreateResult.Uploadid, retype, local_ctime: local_ctime, local_mtime: local_mtime);
+                CreateResult createResult = await CreateAsync(AccessToken, dest, info.Length, isdir, block_list, preCreateResult.Uploadid, rtype, local_ctime: local_ctime, local_mtime: local_mtime);
             }
             catch (Exception ex)
             {

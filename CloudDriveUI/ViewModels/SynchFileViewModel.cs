@@ -188,7 +188,6 @@ public class SynchFileViewModel : FileViewBase
                 conf.LocalPath = local;
                 conf.RemotePath = remote;
                 SetFileItemsAsync();
-                AppCommands.SaveConfigCommand.Execute(null);
             }
             else
             {
