@@ -4,23 +4,24 @@ using Prism.Commands;
 using Prism.Regions;
 using Prism.Services.Dialogs;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace CloudDriveUI.ViewModels;
 
-public class FileViewBase : BindableBase, IConfirmNavigationRequest
+public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
 {
 
     protected readonly ICloudDriveProvider cloudDrive;
-    private ObservableCollection<FileListItem> fileItems = new();
+    protected ObservableCollection<FileListItem> fileItems = new();
+    private ObservableCollection<string> paths = new ObservableCollection<string>() { "undefine" };
 
     public FileViewBase(ICloudDriveProvider cloudDrive)
     {
         this.cloudDrive = cloudDrive;
 
-        OpenDirCommand = new(OpenDic);
+        OpenDirCommand = new(OpenDir);
         NavDirCommand = new(NavDir);
-
     }
 
 
@@ -29,7 +30,7 @@ public class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// <summary>
     /// 当前路径，第一项为界面标题："文件"
     /// </summary>
-    public ObservableCollection<string> Paths { get; set; } = new ObservableCollection<string>() { "undefine" };
+    public ObservableCollection<string> Paths { get => paths; set => SetProperty(ref paths, value); }
     /// <summary>
     /// 双击文件夹展开
     /// </summary>
@@ -42,48 +43,21 @@ public class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// <summary>
     /// 需要显示的文件列表
     /// </summary>
-    public ObservableCollection<FileListItem> FileItems { get => fileItems; set => SetProperty(ref fileItems,value); }
+    public ObservableCollection<FileListItem> FileItems { get => fileItems; set => SetProperty(ref fileItems, value); }
 
     #endregion
 
-    private void OpenDic(string id)
-    {
-        var itm = this.fileItems.First(e => e.Id == id);
-        try
-        {
-            if (itm.IsDir)
-            {
-                Paths.Add(itm.Name ?? "");
-                SetFileItemsAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            Paths.RemoveAt(Paths.Count - 1);
-            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
+    /// <summary>
+    /// 打开文件夹
+    /// </summary>
+    /// <param name="id">FilListItem Id</param>
+    protected abstract void OpenDir(string id);
 
     /// <summary>
     /// 文件路径导航
     /// </summary>
-    /// <param name="i"></param>
-    private void NavDir(int? i)
-    {
-        if (i != null)
-        {
-            while (Paths.Count > (int)i + 1)
-                Paths.RemoveAt(Paths.Count - 1);
-            SetFileItemsAsync();
-        }
-    }
-
-
-    /// <summary>
-    /// 根据当前路径获取文件列表，去除路径列表的第一项
-    /// </summary>
-    protected virtual void SetFileItemsAsync() { }
-
+    /// <param name="i">路径 Paths 索引</param>
+    protected abstract void NavDir(int? i);
 
     public void OnNavigatedTo(NavigationContext navigationContext)
     {

@@ -25,7 +25,8 @@ public interface IFileInfo
     /// <summary>
     /// 递归获取所有文件信息
     /// </summary>
+    /// <param name="path">文件路径</param>
     /// <returns></returns>
-    public IEnumerable<CloudFileInfo> GetFileAll();
+    public Task<IEnumerable<CloudFileInfo>> GetFileListAllAsync(string path);
 
 }

@@ -35,5 +35,7 @@ public enum SynchState
     /// <summary>
     /// 文件冲突
     /// </summary>
-    Conflict = 0b1000000
+    Conflict = 0b1000000,
+
+
 }

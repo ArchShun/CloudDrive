@@ -19,6 +19,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\BDCloudDrive\BDCloudDrive.csproj" />
+	  <ProjectReference Include="..\CloudDriveUI\CloudDriveUI.csproj" />
 	  <ProjectReference Include="..\CloudDrive\CloudDrive.csproj" />
 	</ItemGroup>
 

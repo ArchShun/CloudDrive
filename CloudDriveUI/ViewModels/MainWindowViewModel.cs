@@ -15,16 +15,15 @@ public class MainWindowViewModel : BindableBase
 
     public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive)
     {
+
         title = "CloudDrive";
         operationItems = new List<OperationItem>()
         {
             new OperationItem() { Name = "个人中心", Icon = "AccountCogOutline" }
         };
         regionManager.RegisterViewWithRegion("NavigateRegion", "NavigationBar");
-
         UserInfo = Task.Run(cloudDrive.GetUserInfoAsync).Result;
     }
-
 
     public string Title
     {

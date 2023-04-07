@@ -11,7 +11,7 @@ namespace CloudDriveUI.Converters;
 public class FileListItemsConverter : IValueConverter
 {
 
-    private readonly Dictionary<FileType, string> icons = new Dictionary<FileType, string>()
+    private readonly Dictionary<FileType, string> icons = new()
         {
             {FileType.Video,"VideoOutline" },
             {FileType.Audio,"Music"},
@@ -84,7 +84,7 @@ public class FileListItemsConverter : IValueConverter
     /// <returns></returns>
     private object SynchFileViewConvert(IEnumerable<FileListItem> values)
     {
-        return values.Select<FileListItem, object>(file => new
+        return values.OrderBy(e => !e.IsDir).Select<FileListItem, object>(file => new
         {
             file.Id,
             Name = file.Name ?? "",
@@ -93,7 +93,8 @@ public class FileListItemsConverter : IValueConverter
             LocalUpdate = ((DateTime)file.LocalUpdate).ToString("yyyy-MM-dd HH:mm"),
             Size = FileUtils.CalSize(file.Size),
             BadgeIcon = badgeIconDict[file.State],
-            BadgeColor =file.State ==SynchState.Detached ? "translate" : (file.State == SynchState.Consistent ? "green" : "red")
+            BadgeColor = file.State == SynchState.Detached ? "translate" : (file.State == SynchState.Consistent ? "green" : "red")
+            //Opacity = file.State == SynchState. ? "translate" : (file.State == SynchState.Consistent ? "green" : "red")
         });
     }
 

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using CloudDriveUI.Models;
+using ImTools;
+using System.IO;
 using System.Runtime.Intrinsics.Arm;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
@@ -105,9 +107,9 @@ public static class FileUtils
         {
             using (SHA256 mySHA256 = SHA256.Create())
             {
-                var hash1 = GenerateFileSha256(mySHA256,filePath1);
+                var hash1 = GenerateFileSha256(mySHA256, filePath1);
                 if (hash1 == null) return false;
-                var hash2 = GenerateFileSha256(mySHA256,filePath2);
+                var hash2 = GenerateFileSha256(mySHA256, filePath2);
                 if (hash2 == null) return false;
                 return BitConverter.ToString(hash1).Equals(BitConverter.ToString(hash2));
             }
@@ -140,6 +142,70 @@ public static class FileUtils
             }
         }
         return hashValue;
+    }
+
+    /// <summary>
+    /// 获取指定路径的本地文件
+    /// </summary>
+    public static void GetLocalFileInfos<T>(string path, ref List<T> result, Func<FileSystemInfo, T> converter, bool recursion = false)
+    {
+        var dirInfo = new DirectoryInfo(path);
+        if (!dirInfo.Exists) return;
+        foreach (var info in dirInfo.GetFileSystemInfos())
+        {
+            result.Add(converter(info));
+            if (recursion && ((info!.Attributes & FileAttributes.Directory) > 0))
+                GetLocalFileInfos(info.FullName, ref result, converter, true);
+        }
+    }
+
+    /// <summary>
+    /// 递归获取路径下的所有文件夹和文件
+    /// </summary>
+    /// <param name="path">根路径</param>
+    /// <param name="recursion">是否递归</param>
+    /// <returns></returns>
+    public static IEnumerable<FileSystemInfo> GetAllFileInfos(string path, bool recursion = true)
+    {
+        var dirInfo = new DirectoryInfo(path);
+        var result = new List<FileSystemInfo>();
+        if (dirInfo.Exists)
+        {
+            foreach (var dir in dirInfo.GetDirectories())
+            {
+                result.Add(dir);
+                result.AddRange(GetAllFileInfos(dir.FullName, recursion));
+            }
+            foreach(var file in dirInfo.GetFiles())
+            {
+                result.Add(file);
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 获取本地文件节点
+    /// </summary>
+    /// <param name="path">根路径</param>
+    /// <param name="recursion">是否递归</param>
+    /// <param name="relocation">是否将根路径设置到 path </param>
+    /// <returns></returns>
+    public static Node<FileSystemInfo> GetLocalFileNode(string path, bool recursion = true, bool relocation = true)
+    {
+        var locInfos = GetAllFileInfos(path,recursion);
+        var root = new Node<FileSystemInfo>("root");
+        foreach (var itm in locInfos)
+        {
+            var node = new Node<FileSystemInfo>(itm.Name, itm);
+            root.Insert(node, itm.FullName,Path.DirectorySeparatorChar);
+        }
+        if (relocation)
+        {
+            root = root.GetNode(path);
+            root.Parent = null;
+        }
+        return root;
     }
 
 }

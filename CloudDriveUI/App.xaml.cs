@@ -10,6 +10,8 @@ using BDCloudDrive.Entities;
 using Prism.Commands;
 using System.Text.Json.Nodes;
 using System.Text;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration.Json;
 
 namespace CloudDriveUI;
 

@@ -24,44 +24,9 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <md:DialogHost
-        DialogTheme="Inherit"
-        Identifier="RootDialog"
-        SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}">
+    <md:DialogHost Identifier="RootDialog" SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}">
         <md:DialogHost.DialogContent>
-            <StackPanel Margin="16">
-                <TextBlock Text="Add a new fruit." />
-                <TextBox
-                    x:Name="FruitTextBox"
-                    Margin="0,8,0,0"
-                    HorizontalAlignment="Stretch" />
-                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <Button
-                        Margin="0,8,8,0"
-                        Command="{x:Static md:DialogHost.CloseDialogCommand}"
-                        Content="ACCEPT"
-                        IsDefault="True"
-                        Style="{StaticResource MaterialDesignFlatButton}">
-                        <Button.CommandParameter>
-                            <system:Boolean xmlns:system="clr-namespace:System;assembly=mscorlib">
-                                True
-                            </system:Boolean>
-                        </Button.CommandParameter>
-                    </Button>
-                    <Button
-                        Margin="0,8,8,0"
-                        Command="{x:Static md:DialogHost.CloseDialogCommand}"
-                        Content="CANCEL"
-                        IsCancel="True"
-                        Style="{StaticResource MaterialDesignFlatButton}">
-                        <Button.CommandParameter>
-                            <system:Boolean xmlns:system="clr-namespace:System;assembly=mscorlib">
-                                False
-                            </system:Boolean>
-                        </Button.CommandParameter>
-                    </Button>
-                </StackPanel>
-            </StackPanel>
+            <StackPanel Margin="16" />
         </md:DialogHost.DialogContent>
 
         <Grid>

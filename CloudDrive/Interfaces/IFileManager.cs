@@ -11,48 +11,49 @@ public interface IFileManager
     /// <summary>
     /// 复制
     /// </summary>
-    /// <param name="src">源路径</param>
+    /// <param name="path">源路径</param>
     /// <param name="dest">目标路径</param>
-    /// <returns></returns>
-    public CloudFileInfo? Copy(string src, string dest);
+    /// <returns>操作是否成功</returns>
+    public Task<bool> CopyAsync(string path, string dest);
     /// <summary>
     /// 移动
     /// </summary>
-    /// <param name="src">源路径</param>
+    /// <param name="path">源路径</param>
     /// <param name="dest">目标路径</param>
-    /// <returns></returns>
-    public CloudFileInfo? Remove(string src, string dest);
+    /// <returns>操作是否成功</returns>
+    public Task<bool> MoveAsync(string path, string dest);
     /// <summary>
     /// 重命名
     /// </summary>
-    /// <param name="src">源路径</param>
-    /// <param name="dest">目标路径</param>
-    /// <returns></returns>
-    public CloudFileInfo? Rename(string src, string dest);
+    /// <param name="path">源路径</param>
+    /// <param name="name">目标路径</param>
+    /// <returns>操作是否成功</returns>
+    public Task<bool> RenameAsync(string path, string name);
     /// <summary>
     /// 删除
     /// </summary>
-    /// <param name="src">源路径</param>
-    public void Delete(string src);
+    /// <param name="path">源路径</param>
+    /// <returns>操作是否成功</returns>
+    public Task<bool> DeleteAsync(string path);
     /// <summary>
     /// 上传
     /// </summary>
-    /// <param name="src">文件路径</param>
+    /// <param name="path">文件路径</param>
     /// <param name="dest">上传到云盘路径</param>
     /// <returns></returns>
-    public Task<CloudFileInfo?> UploadAsync(string src, string dest);
+    public Task<CloudFileInfo?> UploadAsync(string path, string dest);
 
     /// <summary>
     /// 下载
     /// </summary>
-    /// <param name="src">云盘文件路径</param>
+    /// <param name="path">云盘文件路径</param>
     /// <param name="dest">保存到</param>
     /// <returns>是否成功</returns>
-    public Task<bool> DownloadAsync(string src, string dest);
+    public Task<bool> DownloadAsync(string path, string dest);
 
     /// <summary>
     /// 创建文件夹
     /// </summary>
     /// <param name="path">文件夹路径</param>
-    public void CreateDirectory(string path);
+    public Task<CloudFileInfo?> CreateDirectoryAsync(string path);
 }

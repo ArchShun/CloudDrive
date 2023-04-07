@@ -14,7 +14,5 @@ public record KeyValueItem<KT, VT>
         Value = value;
     }
 
-
     public VT? Value { get; set; }
-
 }

@@ -7,6 +7,14 @@ namespace CloudDriveUI.ViewModels;
 
 public static class DialogHostExtentions
 {
+
+    public static async Task ShowMessageDialogAsync(string message)
+    {
+        var dialog = new MessageDialog();
+        dialog.DataContext = message;
+        await DialogHost.Show(dialog, "RootDialog");
+    }
+
     /// <summary>
     /// 根据字典创建表单
     /// </summary>

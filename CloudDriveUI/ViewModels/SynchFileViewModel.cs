@@ -4,9 +4,8 @@ using CloudDriveUI.Utils;
 using ImTools;
 using Microsoft.Extensions.Options;
 using Prism.Commands;
-using System.Collections.Generic;
-using System.IO.Packaging;
-using System.Linq;
+using System;
+using System.Runtime.Intrinsics.Arm;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -14,20 +13,45 @@ namespace CloudDriveUI.ViewModels;
 
 public class SynchFileViewModel : FileViewBase
 {
+
+    #region 属性
+    /// <summary>
+    /// 本地与远程文件id映射
+    /// </summary>
+    public IEnumerable<Tuple<string?, long?>> Mapper { get; set; } = new List<Tuple<string?, long?>>();
+
     /// <summary>
     /// 云端对应文件列表
     /// </summary>
-    private IEnumerable<CloudFileInfo> remoteFileInfos = new List<CloudFileInfo>();
+    public IEnumerable<CloudFileInfo> RemoteFileInfos { get; set; } = new List<CloudFileInfo>();
 
     /// <summary>
-    /// 云端文件id，FileListItemId 映射表
+    /// 当前目录本地文件
     /// </summary>
-    private IEnumerable<Tuple<string?, long?>> mapper = new List<Tuple<string?, long?>>();
+    public IEnumerable<FileSystemInfo> LocalFileInfos { get; set; } = new List<FileSystemInfo>();
 
-    public ObservableCollection<OperationItem> OperationItems { get; }
+    public IEnumerable<OperationItem> OperationItems { get; }
 
     public IOptionsSnapshot<AppConfig> AppConfigOpt { get; private set; }
 
+    private string CurLocalPath
+    {
+        get
+        {
+            var conf = AppConfigOpt.Value.SynchFileConfig;
+            return Path.TrimEndingDirectorySeparator(Path.Join(conf.LocalPath.Replace("/", "\\"), string.Join("\\", Paths.Skip(1))));
+        }
+    }
+    private string CurRemotePath
+    {
+        get
+        {
+            var conf = AppConfigOpt.Value.SynchFileConfig;
+            return Path.TrimEndingDirectorySeparator(Path.Join(conf.RemotePath.Replace("/", "\\"), string.Join("\\", Paths.Skip(1))));
+        }
+    }
+
+    #endregion
 
     public SynchFileViewModel(ICloudDriveProvider cloudDrive, IOptionsSnapshot<AppConfig> options) : base(cloudDrive)
     {
@@ -35,142 +59,96 @@ public class SynchFileViewModel : FileViewBase
         OperationItems = new ObservableCollection<OperationItem>()
         {
             new OperationItem() { Name = "配置同步", Icon = "CogSyncOutline",Command = new DelegateCommand<object?>(obj=>SetAsyncConfig()) },
-            new OperationItem() { Name = "立即同步", Icon = "FolderSyncOutline" ,Command = new DelegateCommand<object?>(async obj=>await UpdateFilesAsync()) }
+            new OperationItem() { Name = "立即同步", Icon = "FolderSyncOutline" ,Command = new DelegateCommand<object?>(async obj=>await SynchronizAllItem()) }
         };
 
-        SetFileItemsAsync();
+        _ = RefreshFileItems(CurLocalPath, CurRemotePath);
     }
 
-
-
-    /// <summary>
-    /// 下载当前路径的云端文件信息
-    /// </summary>
-    private async Task<IEnumerable<CloudFileInfo>> GetRemoteFileInfo()
+    protected override async void OpenDir(string id)
     {
-        var conf = AppConfigOpt.Value.SynchFileConfig;
-        if (conf?.RemotePath != null)
+        var itm = fileItems.FirstOrDefault(e => e?.Id == id && e.IsDir, null);
+        if (itm != null)
         {
-            var path = conf.RemotePath + "\\" + string.Join("\\", Paths.Skip(1));
-            this.remoteFileInfos = await this.cloudDrive.GetFileListAsync(path);
-        }
-        return this.remoteFileInfos;
-    }
-    protected override async void SetFileItemsAsync()
-    {
-        var fileInfos = GetLocalFileItems();
-        var remoteInfos = await GetRemoteFileInfo();
-        mapper = CreateMapper(fileInfos, remoteInfos);
-        var res = SetFileItemsState(fileInfos, remoteInfos, mapper);
-        FileItems = new(res);
-    }
-
-    /// <summary>
-    /// 获取当前路径的本地文件
-    /// </summary>
-    protected IEnumerable<FileListItem> GetLocalFileItems()
-    {
-        var conf = AppConfigOpt.Value.SynchFileConfig;
-        var path = (conf?.LocalPath ?? "") + "\\" + string.Join("\\", Paths.Skip(1));
-        var dirInfo = new DirectoryInfo(path);
-        if (dirInfo.Exists)
-        {
-            return dirInfo.GetFileSystemInfos().Map(info =>
+            try
             {
-                var file = new FileListItem
-                {
-                    IsDir = (info!.Attributes & FileAttributes.Directory) > 0,
-                    Name = info.Name,
-                    LocalUpdate = info.LastWriteTime,
-                };
-                file.FileType = (bool)file.IsDir ? null : FileUtils.GetFileType((FileInfo)info);
-                file.Size = (bool)file.IsDir ? -1 : ((FileInfo)info).Length;
-                return file;
-            }).OrderBy(file => !file.IsDir);
+                Paths.Add(itm.Name ?? "");
+                await RefreshFileItems(CurLocalPath, CurRemotePath);
+            }
+            catch (Exception ex)
+            {
+                Paths.RemoveAt(Paths.Count - 1);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
-        return new List<FileListItem>();
     }
-    /// <summary>
-    /// 创建本地文件与远程文件的 id 映射
-    /// </summary>
-    /// <param name="localItems"></param>
-    /// <param name="remoteItems"></param>
-    /// <returns></returns>
-    protected static IEnumerable<Tuple<string?, long?>> CreateMapper(IEnumerable<FileListItem> localItems, IEnumerable<CloudFileInfo> remoteItems)
+    protected override void NavDir(int? i)
     {
-        var mapper = new List<Tuple<string?, long?>>();
-        var localSet = new HashSet<Tuple<string, bool>>(localItems.Select(item => new Tuple<string, bool>(item.Name, item.IsDir)));
-        var remoteSet = new HashSet<Tuple<string, bool>>(remoteItems.Select(item => new Tuple<string, bool>(item.Name, item.IsDir)));
-
-        var localIntersectId = new List<string>();
-        var remoteIntersectId = new List<long>();
-        localSet.Intersect(remoteSet)?.ToList().ForEach(itm =>
+        if (i.HasValue)
         {
-            var locaFile = localItems.First(e => e.Name == itm.Item1 && e.IsDir == itm.Item2);
-            var remoteFile = remoteItems.First(e => e.Name == itm.Item1 && e.IsDir == itm.Item2);
-            mapper.Add(new Tuple<string?, long?>(locaFile.Id, remoteFile.Id));
-            localIntersectId.Add(locaFile.Id);
-            remoteIntersectId.Add(remoteFile.Id);
-        });
-        foreach (var e in localItems.Where(e => !localIntersectId.Contains(e.Id)))
-        {
-            mapper.Add(new Tuple<string?, long?>(e.Id, null));
+            var end = i.Value + 1;
+            Paths = new ObservableCollection<string>(Paths.ToArray()[..end]);
+            _ = RefreshFileItems(CurLocalPath, CurRemotePath);
         }
-        foreach (var e in remoteItems.Where(e => !remoteIntersectId.Contains(e.Id)))
-        {
-            mapper.Add(new Tuple<string?, long?>(null, e.Id));
-        }
-        return mapper;
     }
 
     /// <summary>
-    /// 根据远程文件信息设置同步状态和文件Id
+    /// 根据本地文件和远程文件信息设置 FileItems
     /// </summary>
-    /// <param name="localItems"></param>
-    /// <param name="remoteItems"></param>
-    /// <param name="mapper"></param>
+    /// <param name="localInfos">是否更新本地文件信息</param>
+    /// <param name="remoteInfos">是否更新远程文件信息</param>
     /// <returns>FileListItem 集合对象 </returns>
-    protected static IEnumerable<FileListItem> SetFileItemsState(IEnumerable<FileListItem> localItems, IEnumerable<CloudFileInfo> remoteItems, IEnumerable<Tuple<string?, long?>> mapper)
+    protected async Task RefreshFileItems(string loc_path, string rem_path)
     {
-        var tmp = new List<FileListItem>();
-        foreach (var tuple in mapper)
+        var result = new ObservableCollection<FileListItem>();
+        try
         {
-            var local = localItems.FirstOrDefault(e => e?.Id == tuple.Item1, null);
-            var remote = remoteItems.FirstOrDefault(e => e?.Id == tuple.Item2, null);
-
-            // 本地无，远程有，标记为待更新
-            if (local == null && remote != null)
+            var loc = new Dictionary<string, FileSystemInfo>();
+            var rem = new Dictionary<string, CloudFileInfo>();
+            if (loc_path != null && Directory.Exists(loc_path))
             {
-                tmp.Add(new FileListItem()
+                var res = new DirectoryInfo(loc_path).GetFileSystemInfos();
+                foreach (var info in res)
                 {
-                    Name = remote.Name,
-                    IsDir = remote.IsDir,
-                    RemoteUpdate = DateTimeUtils.TimeSpanToDateTime(remote.ServerMtime),
-                    Size = remote.Size,
-                    FileType = remote.Category,
-                    State = SynchState.ToUpdate
-                });
+                    var isDir = (info!.Attributes & FileAttributes.Directory) > 0;
+                    var k = $"{isDir}-{Path.GetRelativePath(loc_path, info.FullName)}";
+                    loc.Add(k, info);
+                }
             }
-            // 本地有，远程无，标记为新增待上传
-            else if (local != null && remote == null)
+            try
             {
-                local.State = SynchState.Added;
+                if (rem_path != null)
+                {
+                    var res = await cloudDrive.GetFileListAsync(rem_path);
+                    foreach (var info in res)
+                    {
+                        var k = $"{info.IsDir}-{Path.GetRelativePath(rem_path, info.Path)}";
+                        rem.Add(k, info);
+                    }
+                }
             }
-            // 本地和远程都有，比较最后的更新时间
-            else if (local != null && remote != null)
+            catch { }
+            // 遍历本地文件，如果远程也存在则根据本地和远程创建列表项
+            foreach (var kv in loc)
             {
-                var remoteTime = DateTimeUtils.TimeSpanToDateTime(remote.LocalMtime ?? remote.ServerMtime);
-                var dt = (remoteTime - local.LocalUpdate).TotalSeconds;
-                if (dt == 0) local.State = SynchState.Consistent;
-                else if (dt < 0) local.State = SynchState.Modified;
-                else local.State = SynchState.ToUpdate;
-                local.RemoteUpdate = remoteTime;
+                if (rem.ContainsKey(kv.Key)) result.Add(new FileListItem(kv.Value, rem[kv.Key]));
+                else result.Add(new FileListItem(kv.Value));
+            }
+            // 遍历远程文件，如果本地不存在，则创建列表项
+            foreach (var kv in rem)
+            {
+                if (!loc.ContainsKey(kv.Key)) result.Add(new FileListItem(kv.Value));
             }
         }
-        localItems = localItems.Append(tmp);
-        return localItems;
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        this.FileItems = result;
     }
 
+    #region 配置相关
     /// <summary>
     /// 配置同步路径
     /// </summary>
@@ -187,7 +165,7 @@ public class SynchFileViewModel : FileViewBase
             {
                 conf.LocalPath = local;
                 conf.RemotePath = remote;
-                SetFileItemsAsync();
+                await RefreshFileItems(CurLocalPath, CurRemotePath);
             }
             else
             {
@@ -196,35 +174,192 @@ public class SynchFileViewModel : FileViewBase
         }
     }
 
-    private string? GetCurLocalPath()
-    {
-        var conf = AppConfigOpt.Value.SynchFileConfig;
-        if (conf == null) return null;
-        return conf.LocalPath + "\\" + string.Join("\\", Paths.Skip(1));
-    }
-    private string? GetCurRemotePath()
-    {
-        var conf = AppConfigOpt.Value.SynchFileConfig;
-        if (conf == null) return null;
-        return conf.RemotePath + "\\" + string.Join("\\", Paths.Skip(1));
-    }
+    #endregion
 
-    public async Task<bool> UpdateFilesAsync()
+    #region 文件同步操作
+
+    private async Task<bool> UploadItem(FileListItem itm)
     {
-        var conf = AppConfigOpt.Value.SynchFileConfig;
-        if (conf == null) return false;
-        var tempDir = Directory.CreateDirectory("$tmp");
-        foreach (var item in FileItems.Where(item => item.State == SynchState.ToUpdate))
+        var path = Path.Join(CurLocalPath, itm.Name);
+        var dest = Path.Join(CurRemotePath, itm.Name);
+        if (!itm.IsDir)
         {
-            if (!item.IsDir)
+            var res = await cloudDrive.UploadAsync(path, dest);
+            if (res != null)
             {
-                //var info = this.remoteFileInfos.First(e => e.Id == mapper[item.Id]);
-                var path = $@"{GetCurRemotePath()}\{item.Name}";
-                var localPath = $@"{GetCurLocalPath}\{item.Name}";
-                await cloudDrive.DownloadAsync(path, $@"{tempDir}\{item.Name}");
+                itm.State = SynchState.Consistent;
+                RaisePropertyChanged(nameof(FileItems));
+                return true;
             }
         }
-        return true;
+        return false;
+    }
+
+    private async Task<bool> DeletedItem(int idx)
+    {
+        var itm = this.FileItems[idx];
+        var dest = CurLocalPath + itm.Name;
+        var res = await cloudDrive.DeleteAsync(dest);
+        if (res)
+        {
+            FileItems.RemoveAt(idx);
+            RaisePropertyChanged(nameof(FileItems));
+            return true;
+        }
+        return false;
+    }
+
+    private async Task<bool> DownloadItem(FileListItem itm)
+    {
+        var path = CurLocalPath + itm.Name;
+        var dest = CurLocalPath + itm.Name;
+        var res = await cloudDrive.DownloadAsync(path, dest);
+        if (res)
+        {
+            itm.State = SynchState.Consistent;
+            RaisePropertyChanged(nameof(FileItems));
+            return true;
+        }
+        return false;
+    }
+
+    private async Task<bool> UploadDir(FileListItem itm)
+    {
+        var path = CurLocalPath + itm.Name;
+        var dest = CurLocalPath + itm.Name;
+        var remoteInfo = await cloudDrive.GetFileListAllAsync(dest);
+        var localInfo = new List<FileListItem>();
+        //FileUtils.GetLocalFileInfos(path, ref localInfo, FileListItemUtils.Create, recursion: true);
+
+        if (await cloudDrive.CreateDirectoryAsync(dest) != null)
+        {
+            //var mapper = FileListItemUtils.MergeItems(localInfo, remoteInfo);
+            //FileListItemUtils.CreateFileItemState(LocalFileInfos, RemoteFileInfos, Mapper);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 获取云端文件节点
+    /// </summary>
+    /// <param name="path">根路径</param>
+    /// <param name="recursion">是否递归</param>
+    /// <param name="relocation">是否将根路径设置到 path </param>
+    /// <returns></returns>
+    private async Task<Node<CloudFileInfo>> GetRemoteFileNodeAsync(string path, bool recursion = false, bool relocation = true)
+    {
+        IEnumerable<CloudFileInfo> remInfos = new List<CloudFileInfo>();
+        if (recursion) remInfos = await cloudDrive.GetFileListAllAsync(path);
+        else remInfos = await cloudDrive.GetFileListAsync(path);
+        var remote_root = new Node<CloudFileInfo>("remote_root");
+        foreach (var itm in remInfos)
+        {
+            var node = new Node<CloudFileInfo>(itm.Name, itm);
+            var paths = itm.Path.Split("/").Where(e => !string.IsNullOrEmpty(e)).ToArray();
+            remote_root.Insert(node, paths);
+        }
+        if (relocation)
+        {
+            remote_root = remote_root.GetNode(path, '/');
+            remote_root.Parent = null;
+        }
+        return remote_root;
+    }
+
+
+    /// <summary>
+    /// 全部同步
+    /// </summary>
+    /// <param name="idx"></param>
+    /// <returns></returns>
+    private async Task SynchronizAllItem()
+    {
+        var remote_root = await GetRemoteFileNodeAsync(AppConfigOpt.Value.SynchFileConfig.RemotePath, true, true);
+        var local_root = FileUtils.GetLocalFileNode(AppConfigOpt.Value.SynchFileConfig.LocalPath, true, true);
+
+        var result = new ObservableCollection<FileListItem>();
+        foreach (var itm in remote_root)
+        {
+            var info = local_root.FirstOrDefault(node => {
+                Console.WriteLine(node?.Path +"----->"+ itm.Path);
+               return node?.Path == itm.Path;
+            }, null);
+            if (info?.Value != null && itm.Value != null) result.Add(new FileListItem(info.Value, itm.Value));
+            else if (itm.Value != null) result.Add(new FileListItem(itm.Value));
+        }
+        //try
+        //{
+        //    var loc = new Dictionary<string, FileSystemInfo>();
+        //    var rem = new Dictionary<string, CloudFileInfo>();
+        //    if (loc_path != null && Directory.Exists(loc_path))
+        //    {
+        //        var res = new DirectoryInfo(loc_path).GetFileSystemInfos();
+        //        foreach (var info in res)
+        //        {
+        //            var isDir = (info!.Attributes & FileAttributes.Directory) > 0;
+        //            var k = $"{isDir}-{Path.GetRelativePath(loc_path, info.FullName)}";
+        //            loc.Add(k, info);
+        //        }
+        //    }
+        //    try
+        //    {
+        //        if (rem_path != null)
+        //        {
+        //            var res = await cloudDrive.GetFileListAsync(rem_path);
+        //            foreach (var info in res)
+        //            {
+        //                var k = $"{info.IsDir}-{Path.GetRelativePath(rem_path, info.Path)}";
+        //                rem.Add(k, info);
+        //            }
+        //        }
+        //    }
+        //    catch { }
+        //    // 遍历本地文件，如果远程也存在则根据本地和远程创建列表项
+        //    foreach (var kv in loc)
+        //    {
+        //        if (rem.ContainsKey(kv.Key)) result.Add(new FileListItem(kv.Value, rem[kv.Key]));
+        //        else result.Add(new FileListItem(kv.Value));
+        //    }
+        //    // 遍历远程文件，如果本地不存在，则创建列表项
+        //    foreach (var kv in rem)
+        //    {
+        //        if (!loc.ContainsKey(kv.Key)) result.Add(new FileListItem(kv.Value));
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //}
+
+        //this.FileItems = result;
+
+
+        //foreach (var itm in FileItems)
+        //{
+        //    //if (itm.IsDir) switch (itm.State)
+        //    //    {
+        //    //        case SynchState.Added:
+        //    //            return UploadDir(itm);
+        //    //        case SynchState.Modified:
+        //    //            return UploadItem(itm);
+        //    //        case SynchState.Deleted:
+        //    //            return DeletedItem(idx);
+        //    //        case SynchState.ToUpdate:
+        //    //            return DownloadItem(itm);
+        //    //    }
+        //    if (!itm.IsDir) switch (itm.State)
+        //        {
+        //            case SynchState.Added:
+        //            case SynchState.Modified:
+        //                await UploadItem(itm);
+        //                break;
+        //                //case SynchState.Deleted:
+        //                //    return DeletedItem(idx);
+        //                //case SynchState.ToUpdate:
+        //                //    return DownloadItem(itm);
+        //        }
+
+        //}
     }
 
 
@@ -233,5 +368,6 @@ public class SynchFileViewModel : FileViewBase
         throw new NotImplementedException();
     }
 
+    #endregion
 
 }

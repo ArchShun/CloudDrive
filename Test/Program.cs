@@ -31,7 +31,10 @@ Assembly.GetExecutingAssembly().GetTypes().Where(type => typeof(TestControllerBa
 
 // 调用测试类
 using ServiceProvider provider = service.BuildServiceProvider();
-provider.GetRequiredService<ITestController>().Excute();
+foreach (var itc in provider.GetServices<ITestController>())
+{
+    itc.Excute();
+}
 
 
 

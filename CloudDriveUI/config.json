@@ -2,5 +2,10 @@
   "SynchFileConfig": {
     "LocalPath": "E:\\Test",
     "RemotePath": "/apps/test"
+  },
+  "BDConfig": {
+    "AccessToken": "123.7ff9fdf3147e782bbd75d83445a40cc7.YngI0KNXdcIyO9sh9VYX4Kp-p7P0hp_TA0MR6-A.LkqUPA",
+    "Ondup": "overwrite", 
+    "Rtype": 3 
   }
 }
