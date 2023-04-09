@@ -24,79 +24,91 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <md:DialogHost Identifier="RootDialog" SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}">
+    <md:DialogHost
+        Identifier="RootDialog"
+        OverlayBackground="Gray"
+        SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}">
         <md:DialogHost.DialogContent>
-            <StackPanel Margin="16" />
+            <StackPanel />
         </md:DialogHost.DialogContent>
+        <md:DialogHost
+            DialogBackground="Transparent"
+            Identifier="ProgressBar"
+            OverlayBackground="LightGray">
+            <md:DialogHost.DialogContent>
+                <StackPanel />
+            </md:DialogHost.DialogContent>
 
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition />
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0" Background="#f5f5f5">
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition Height="auto" />
-                </Grid.RowDefinitions>
-                <!--  左侧导航  -->
-                <ContentControl Margin="20" prism:RegionManager.RegionName="NavigateRegion" />
-                <!--  头像设置区  -->
-                <DockPanel Grid.Row="1" Background="#eee">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" Background="#f5f5f5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto" />
+                    </Grid.RowDefinitions>
+                    <!--  左侧导航  -->
+                    <ContentControl Margin="20" prism:RegionManager.RegionName="NavigateRegion" />
+                    <!--  头像设置区  -->
+                    <DockPanel Grid.Row="1" Background="#eee">
 
-                    <Image
-                        Width="50"
-                        Height="50"
-                        Margin="20,20,10,20"
-                        Source="{Binding UserInfo.AvatarUrl}">
-                        <Image.Clip>
-                            <EllipseGeometry
-                                Center="25,25"
-                                RadiusX="25"
-                                RadiusY="25" />
-                        </Image.Clip>
-                    </Image>
-                    <TextBlock
-                        MaxWidth="120"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                        Text="{Binding UserInfo.Name}" />
-                    <md:PopupBox
-                        Margin="10"
-                        HorizontalAlignment="Right"
-                        IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
-                        PlacementMode="TopAndAlignLeftEdges"
-                        ToggleCheckedContentCommand="{Binding FloatingActionDemoCommand}"
-                        ToggleCheckedContentCommandParameter="wowsers">
-                        <md:PopupBox.ToggleCheckedContent>
-                            <md:PackIcon
-                                Width="24"
-                                Height="24"
-                                Background="LightBlue"
-                                BorderBrush="Transparent"
-                                Kind="Pencil" />
-                        </md:PopupBox.ToggleCheckedContent>
-                        <ListBox ItemsSource="{Binding OperationItems}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <md:PackIcon Margin="5,0" Kind="{Binding Icon}" />
-                                        <TextBlock Margin="5,0" Text="{Binding Name}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </md:PopupBox>
-                </DockPanel>
+                        <Image
+                            Width="50"
+                            Height="50"
+                            Margin="20,20,10,20"
+                            Source="{Binding UserInfo.AvatarUrl}">
+                            <Image.Clip>
+                                <EllipseGeometry
+                                    Center="25,25"
+                                    RadiusX="25"
+                                    RadiusY="25" />
+                            </Image.Clip>
+                        </Image>
+                        <TextBlock
+                            MaxWidth="120"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                            Text="{Binding UserInfo.Name}" />
+                        <md:PopupBox
+                            Margin="10"
+                            HorizontalAlignment="Right"
+                            IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
+                            PlacementMode="TopAndAlignLeftEdges"
+                            ToggleCheckedContentCommand="{Binding FloatingActionDemoCommand}"
+                            ToggleCheckedContentCommandParameter="wowsers">
+                            <md:PopupBox.ToggleCheckedContent>
+                                <md:PackIcon
+                                    Width="24"
+                                    Height="24"
+                                    Background="LightBlue"
+                                    BorderBrush="Transparent"
+                                    Kind="Pencil" />
+                            </md:PopupBox.ToggleCheckedContent>
+                            <ListBox ItemsSource="{Binding OperationItems}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <md:PackIcon Margin="5,0" Kind="{Binding Icon}" />
+                                            <TextBlock Margin="5,0" Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </md:PopupBox>
+                    </DockPanel>
+                </Grid>
+
+                <!--  内容区域  -->
+                <ContentControl
+                    Grid.Column="1"
+                    Margin="20,30,20,40"
+                    prism:RegionManager.RegionName="ContentRegion" />
+
+
             </Grid>
 
-            <!--  内容区域  -->
-            <ContentControl
-                Grid.Column="1"
-                Margin="20,30,20,40"
-                prism:RegionManager.RegionName="ContentRegion" />
-
-
-        </Grid>
+        </md:DialogHost>
     </md:DialogHost>
 </Window>

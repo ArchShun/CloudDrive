@@ -332,7 +332,7 @@ public class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         ret = res?.List.Select(DataConvert.ToCloudFileInfo) ?? new List<CloudFileInfo>();
         // 添加到缓存
         foreach (var e in ret)
-            cache.Set(e.Path, e, new TimeSpan(300));
+            cache.Set(e.Path, e, new TimeSpan(0,5,0));
 
         return ret;
     }

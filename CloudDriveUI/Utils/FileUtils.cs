@@ -67,12 +67,13 @@ public static class FileUtils
         return size;
     }
 
+
     /// <summary>
     /// 获取文件类型
     /// </summary>
     /// <param name="fileInfo"></param>
     /// <returns></returns>
-    public static FileType? GetFileType(FileInfo fileInfo)
+    public static FileType GetFileType(FileInfo fileInfo)
     {
         return GetFileType(fileInfo.Extension);
     }
@@ -82,7 +83,7 @@ public static class FileUtils
     /// </summary>
     /// <param name="extension"></param>
     /// <returns></returns>
-    public static FileType? GetFileType(string extension)
+    public static FileType GetFileType(string extension)
     {
 
         foreach (var k in FileTypeDict.Keys)
@@ -92,7 +93,7 @@ public static class FileUtils
                 return k;
             }
         }
-        return null;
+        return FileType.Other;
     }
 
     /// <summary>
@@ -165,7 +166,7 @@ public static class FileUtils
     /// <param name="path">根路径</param>
     /// <param name="recursion">是否递归</param>
     /// <returns></returns>
-    public static IEnumerable<FileSystemInfo> GetAllFileInfos(string path, bool recursion = true)
+    public static IEnumerable<FileSystemInfo> GetAllFileInfos(string path, bool recursion = false)
     {
         var dirInfo = new DirectoryInfo(path);
         var result = new List<FileSystemInfo>();
@@ -174,7 +175,7 @@ public static class FileUtils
             foreach (var dir in dirInfo.GetDirectories())
             {
                 result.Add(dir);
-                result.AddRange(GetAllFileInfos(dir.FullName, recursion));
+                if(recursion) result.AddRange(GetAllFileInfos(dir.FullName, recursion));
             }
             foreach(var file in dirInfo.GetFiles())
             {
@@ -191,14 +192,15 @@ public static class FileUtils
     /// <param name="recursion">是否递归</param>
     /// <param name="relocation">是否将根路径设置到 path </param>
     /// <returns></returns>
-    public static Node<FileSystemInfo> GetLocalFileNode(string path, bool recursion = true, bool relocation = true)
+    public static Node<FileSystemInfo> GetLocalFileNode(string path, bool recursion = false, bool relocation = true)
     {
+        path = Path.GetFullPath(path);
         var locInfos = GetAllFileInfos(path,recursion);
         var root = new Node<FileSystemInfo>("root");
         foreach (var itm in locInfos)
         {
             var node = new Node<FileSystemInfo>(itm.Name, itm);
-            root.Insert(node, itm.FullName,Path.DirectorySeparatorChar);
+            root.Insert(node, itm.FullName);
         }
         if (relocation)
         {

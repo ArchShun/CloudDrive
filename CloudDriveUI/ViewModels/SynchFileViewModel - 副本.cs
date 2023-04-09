@@ -13,24 +13,48 @@ namespace CloudDriveUI.ViewModels;
 
 public class SynchFileViewModel : FileViewBase
 {
-    protected ObservableCollection<SyncFileItem> fileItems = new();
+    protected ObservableCollection<FileListItem> fileItems = new();
 
     #region 属性
 
     /// <summary>
     /// 需要显示的文件列表
     /// </summary>
-    public ObservableCollection<SyncFileItem> FileItems { get => fileItems; set => SetProperty(ref fileItems, value); }
+    public ObservableCollection<FileListItem> FileItems { get => fileItems; set => SetProperty(ref fileItems, value); }
+
+    /// <summary>
+    /// 本地与远程文件id映射
+    /// </summary>
+    public IEnumerable<Tuple<string?, long?>> Mapper { get; set; } = new List<Tuple<string?, long?>>();
+
+    /// <summary>
+    /// 云端对应文件列表
+    /// </summary>
+    public IEnumerable<CloudFileInfo> RemoteFileInfos { get; set; } = new List<CloudFileInfo>();
+
+    /// <summary>
+    /// 当前目录本地文件
+    /// </summary>
+    public IEnumerable<FileSystemInfo> LocalFileInfos { get; set; } = new List<FileSystemInfo>();
 
     public IEnumerable<OperationItem> OperationItems { get; }
 
     public IOptionsSnapshot<AppConfig> AppConfigOpt { get; private set; }
 
-    private string LocalRootPath => Path.GetFullPath(AppConfigOpt.Value.SynchFileConfig.LocalPath.Replace("/", "\\"));
-    private string RemoteRootPath => AppConfigOpt.Value.SynchFileConfig.RemotePath.Replace("/", "\\");
+    private string LocalRootPath
+    {
+        get => Path.GetFullPath(AppConfigOpt.Value.SynchFileConfig.LocalPath.Replace("/", "\\"));
+    }
+    private string RemoteRootPath { get => AppConfigOpt.Value.SynchFileConfig.RemotePath.Replace("/", "\\"); }
 
-    private string CurLocalPath => Path.Join(LocalRootPath, string.Join("\\", Paths.Skip(1)));
-    private string CurRemotePath => Path.Join(RemoteRootPath, string.Join("\\", Paths.Skip(1)));
+    private string CurLocalPath
+    {
+        get => Path.Join(LocalRootPath, string.Join("\\", Paths.Skip(1)));
+    }
+    private string CurRemotePath
+    {
+        get => Path.Join(RemoteRootPath, string.Join("\\", Paths.Skip(1)));
+    }
 
     #endregion
 
@@ -46,9 +70,11 @@ public class SynchFileViewModel : FileViewBase
 
         _ = RefreshFileItems(CurLocalPath, CurRemotePath);
     }
-    protected override async void OpenDirAsync(FileItemBase itm)
+
+    protected override async void OpenDir(object id)
     {
-        if (itm.IsDir)
+        var itm = fileItems.FirstOrDefault(e => e?.Id == id.ToString() && e.IsDir, null);
+        if (itm != null)
         {
             try
             {
@@ -83,8 +109,8 @@ public class SynchFileViewModel : FileViewBase
         var remoteNode = await GetRemoteFileNodeAsync(remotePath, false, true);
         var localNode = FileUtils.GetLocalFileNode(localPath, false, true);
 
-        var res = SyncFileItem.CreateItems(localNode, remoteNode);
-        FileItems = new ObservableCollection<SyncFileItem>(res);
+        var res = FileListItem.CreateFileItems(localNode, remoteNode);
+        FileItems = new ObservableCollection<FileListItem>(res);
     }
 
 
@@ -114,13 +140,15 @@ public class SynchFileViewModel : FileViewBase
         return remote_root;
     }
 
+
+    #region 配置相关
     /// <summary>
     /// 配置同步路径
     /// </summary>
     private async void SetAsyncConfig()
     {
         var conf = AppConfigOpt.Value.SynchFileConfig ?? new SynchFileConfig();
-        var pair = new Dictionary<string, string?>() { { "LocalPath", LocalRootPath }, { "RemotePath", RemoteRootPath } };
+        var pair = new Dictionary<string, string?>() { { "LocalPath", conf.LocalPath }, { "RemotePath", conf.RemotePath } };
         var res = await DialogHostExtentions.ShowListDialogAsync(pair);
         if (res)
         {
@@ -132,9 +160,33 @@ public class SynchFileViewModel : FileViewBase
                 conf.RemotePath = remote;
                 await RefreshFileItems(CurLocalPath, CurRemotePath);
             }
-            else await DialogHostExtentions.ShowMessageDialogAsync($"{local}不存在！");
+            else
+            {
+                MessageBox.Show($"{local}不存在！", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
+
+    #endregion
+
+    #region 文件同步操作
+
+ 
+    private async Task<bool> DeletedItem(FileListItem itm)
+    {
+        var dest = Path.Join(CurLocalPath, itm.Name);
+        var res = await cloudDrive.DeleteAsync(dest);
+        return res;
+    }
+
+    private async Task<bool> DownloadItem(FileListItem itm)
+    {
+        var path = Path.Join(CurLocalPath, itm.Name);
+        var dest = Path.Join(CurLocalPath, itm.Name);
+        var res = await cloudDrive.DownloadAsync(path, dest);
+        return res;
+    }
+
 
     /// <summary>
     /// 全部同步
@@ -146,7 +198,7 @@ public class SynchFileViewModel : FileViewBase
         DialogHostExtentions.ShowCircleProgressBar();
         var remoteNode = await GetRemoteFileNodeAsync(RemoteRootPath, true, true);
         var localNode = FileUtils.GetLocalFileNode(LocalRootPath, true, true);
-        var fileItems = SyncFileItem.CreateItems(localNode, remoteNode);
+        var fileItems = FileListItem.CreateFileItems(localNode, remoteNode);
         // 同步操作
         foreach (var itm in fileItems)
         {
@@ -159,21 +211,21 @@ public class SynchFileViewModel : FileViewBase
                     case SynchState.Modified:
                         await cloudDrive.UploadAsync(itm.LocalPath!, itm.RemotePath!);
                         break;
-                    case SynchState.ToUpdate:
-                        var localFile = new FileInfo(Path.Join(LocalRootPath, Path.GetRelativePath(RemoteRootPath, itm.RemotePath!)));
-                        if (localFile != null)
-                        {
-                            if ((!localFile.Directory?.Exists) ?? false) localFile.Directory?.Create();
-                            var res = await cloudDrive.DownloadAsync(itm.RemotePath!, localFile.FullName);
-                            if (res)
-                                localFile.LastWriteTime = (DateTime)itm.RemoteUpdate!;
-                        }
-                        break;
+                        //case SynchState.Deleted:
+                        //    await DeletedItem(itm);
+                        //    break;
+                        //case SynchState.ToUpdate:
+                        //    await DownloadItem(itm);
+                        //    break;
                 }
         }
         // 更新
         await RefreshFileItems(CurLocalPath, CurRemotePath);
+
         DialogHostExtentions.CloseCircleProgressBar();
     }
+
+
+    #endregion
 
 }

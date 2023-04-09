@@ -34,13 +34,11 @@ public class Node<T> : IEnumerable<Node<T>>
         get
         {
             var res = Children.Find(node => node.Name == path);
-            if (res == null) throw new IndexOutOfRangeException($"不存在索引为{path}的子节点");
-            return res;
+            return res ?? throw new IndexOutOfRangeException($"不存在索引为{path}的子节点");
         }
         set
         {
-            var res = Children.Find(node => node.Name == path);
-            if (res == null) throw new IndexOutOfRangeException($"不存在索引为{path}的子节点");
+            var res = Children.Find(node => node.Name == path) ?? throw new IndexOutOfRangeException($"不存在索引为{path}的子节点");
             res = value;
         }
     }
@@ -87,42 +85,43 @@ public class Node<T> : IEnumerable<Node<T>>
         var child = this[paths[0]];
         return child.GetNode(paths[1..]);
     }
-    public Node<T> GetNode(string path, char path_separator = '\\')
+    public Node<T> GetNode(string path)
     {
         if (string.IsNullOrEmpty(path)) return this;
-        var paths = path.Trim(path_separator).Split(path_separator).ToArray();
+        var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return GetNode(paths);
     }
 
 
     /// <summary>
-    /// 获取节点值
+    /// 获取子节点值
     /// </summary>
     /// <param name="result">结果</param>
-    /// <param name="paths">路径</param>
+    /// <param name="paths">相对于当前节点的路径，不包括当前节点名</param>
     /// <returns></returns>
     public bool TryGetValue(out T? result, string[] paths)
     {
-        result = default;
-        if (paths.Length == 0)
+        try
         {
-            result = Value;
-            return true;
+            result = GetNode(paths).Value;
         }
-        var child = Children.Find(e => e.Name == paths[0]);
-        if (child == null) return false;
-        else return child.TryGetValue(out result, paths[1..]);
+        catch (Exception)
+        {
+            result = default;
+            return false;
+        }
+        return true;
     }
     /// <summary>
-    /// 获取节点值
+    /// 获取子节点值
     /// </summary>
-    /// <param name="path">路径</param>
     /// <param name="result">结果</param>
-    /// <param name="path_separator">路径分隔符</param>
+    /// <param name="path">相对于当前节点的路径，不包括当前节点名</param>
+    /// 
     /// <returns></returns>
-    public bool TryGetValue(out T? result,string path,  char path_separator = '\\')
+    public bool TryGetValue(out T? result, string path)
     {
-        var paths = path.Trim(path_separator).Split(path_separator).ToArray();
+        var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return TryGetValue(out result, paths);
     }
 
@@ -133,26 +132,26 @@ public class Node<T> : IEnumerable<Node<T>>
     /// <param name="paths">定位路径</param>
     public bool TrySetValue(T? value, params string[] paths)
     {
-        if (paths.Length == 0)
+        try
         {
-            Value = value;
-            return true;
+            GetNode(paths).Value = value;
         }
-        var child = Children.Find(e => e.Name == paths[0]);
-        if (child == null) return false;
-        else return child.TrySetValue(value, paths[1..]);
-
+        catch (Exception)
+        {
+            return false;
+        }
+        return true;
     }
     /// <summary>
     /// 获取节点值
     /// </summary>
     /// <param name="value">节点值</param>
     /// <param name="path">路径</param>
-    /// <param name="path_separator">路径分隔符</param>
+    /// 
     /// <returns></returns>
-    public bool TrySetValue(T? value, string path, char path_separator = '\\')
+    public bool TrySetValue(T? value, string path)
     {
-        var paths = path.Trim(path_separator).Split(path_separator).ToArray();
+        var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return TrySetValue(value, paths);
     }
 
@@ -163,7 +162,7 @@ public class Node<T> : IEnumerable<Node<T>>
     /// <param name="node">待插入节点</param>
     /// <param name="paths">插入位置，当前节点的相对路径</param>
     /// <exception cref="ArgumentNullException">路径参数不能为空或空字符</exception>
-    public void Insert(Node<T> node, params string[] paths)
+    public void Insert(Node<T> node, string[] paths)
     {
         if (paths.Any(string.IsNullOrEmpty)) throw new ArgumentNullException("路径参数不能为空或空字符");
         // 插入到当前节点,递归终点
@@ -171,7 +170,6 @@ public class Node<T> : IEnumerable<Node<T>>
         {
             // 如果已包含该子节点且节点值不为空，报错，否则替换该子节点值
             var tmp = Children.Find(n => n.Name == node.Name);
-            Console.WriteLine(tmp);
             if (tmp == null)
             {
                 node.Parent = this;
@@ -203,11 +201,11 @@ public class Node<T> : IEnumerable<Node<T>>
     /// 根据路径字符串插入节点
     /// </summary>
     /// <param name="node">待插入节点</param>
-    /// <param name="path">插入到</param>
-    /// <param name="path_separator">路径分隔符</param>
-    public void Insert(Node<T> node, string path, char path_separator = '\\')
+    /// <param name="path">路径（自动使用 / 和 \ 分割路径）</param>
+    /// 
+    public void Insert(Node<T> node, string path)
     {
-        var paths = path.Split(path_separator).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+        var paths = path.Replace("\\", "/").Trim('/').Split('/');
         Insert(node, paths);
     }
 
@@ -242,9 +240,9 @@ public class Node<T> : IEnumerable<Node<T>>
     /// <param name="paths">节点路径</param>
     /// <param name="path_separator">路径分隔符</param>
     /// <returns></returns>
-    public static Node<T> FromPaths(string path, char path_separator = '\\')
+    public static Node<T> FromPaths(string path)
     {
-        var paths = path.Split(path_separator).Where(e => !string.IsNullOrEmpty(e)).ToArray();
+        var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return FromPaths(paths);
     }
 

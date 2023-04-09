@@ -1,11 +1,5 @@
-﻿using CloudDrive.Interfaces;
-using CloudDriveUI.Models;
+﻿using CloudDriveUI.Models;
 using Prism.Commands;
-using Prism.Regions;
-using Prism.Services.Dialogs;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace CloudDriveUI.ViewModels;
 
@@ -13,14 +7,13 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
 {
 
     protected readonly ICloudDriveProvider cloudDrive;
-    protected ObservableCollection<FileListItem> fileItems = new();
     private ObservableCollection<string> paths = new ObservableCollection<string>() { "undefine" };
 
     public FileViewBase(ICloudDriveProvider cloudDrive)
     {
         this.cloudDrive = cloudDrive;
 
-        OpenDirCommand = new(OpenDir);
+        OpenDirCommand = new(OpenDirAsync);
         NavDirCommand = new(NavDir);
     }
 
@@ -34,24 +27,21 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// <summary>
     /// 双击文件夹展开
     /// </summary>
-    public DelegateCommand<string> OpenDirCommand { get; }
+    public DelegateCommand<FileItemBase> OpenDirCommand { get; }
 
     /// <summary>
     /// 跳转文件夹
     /// </summary>
     public DelegateCommand<int?> NavDirCommand { get; }
-    /// <summary>
-    /// 需要显示的文件列表
-    /// </summary>
-    public ObservableCollection<FileListItem> FileItems { get => fileItems; set => SetProperty(ref fileItems, value); }
+
 
     #endregion
 
     /// <summary>
     /// 打开文件夹
     /// </summary>
-    /// <param name="id">FilListItem Id</param>
-    protected abstract void OpenDir(string id);
+    /// <param name="itm">打开的列表项</param>
+    protected abstract void OpenDirAsync(FileItemBase itm);
 
     /// <summary>
     /// 文件路径导航

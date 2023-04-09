@@ -2,6 +2,8 @@
 using MaterialDesignThemes.Wpf;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace CloudDriveUI.ViewModels;
 
@@ -58,6 +60,20 @@ public static class DialogHostExtentions
         return ShowListDialogAsync(pairs);
     }
 
+
+    /// <summary>
+    /// 环形进度条
+    /// </summary>
+    private static readonly CircleProgressBar circleProgressBar = new CircleProgressBar();
+    public static void ShowCircleProgressBar()
+    {
+        DialogHost.Show(circleProgressBar, "ProgressBar");
+    }
+
+    public static void CloseCircleProgressBar()
+    {
+        DialogHost.Close("ProgressBar");
+    }
 
 
 }

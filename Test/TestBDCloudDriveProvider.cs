@@ -135,49 +135,4 @@ internal class TestBDCloudDriveProvider : TestControllerBase
     }
 
 
-    [TestMethod]
-    public async Task TestNode()
-    {
-        var remote_root = await GetRemoteFileNodeAsync("/apps/test", true, true);
-        var local_root = FileUtils.GetLocalFileNode("E:\\test", true, true);
-
-        var result = new ObservableCollection<FileListItem>();
-        foreach (var itm in remote_root)
-        {
-            var info = local_root.FirstOrDefault(node => {
-                Console.WriteLine(node?.Path + "----->" + itm.Path);
-                return node?.Path == itm.Path;
-            }, null);
-            if (info?.Value != null && itm.Value != null) result.Add(new FileListItem(info.Value, itm.Value));
-            else if (itm.Value != null) result.Add(new FileListItem(itm.Value));
-        }
-    }
-
-    /// <summary>
-    /// 获取云端文件节点
-    /// </summary>
-    /// <param name="path">根路径</param>
-    /// <param name="recursion">是否递归</param>
-    /// <param name="relocation">是否将根路径设置到 path </param>
-    /// <returns></returns>
-    private async Task<Node<CloudFileInfo>> GetRemoteFileNodeAsync(string path, bool recursion = false, bool relocation = true)
-    {
-        IEnumerable<CloudFileInfo> remInfos = new List<CloudFileInfo>();
-        if (recursion) remInfos = await cloudDrive.GetFileListAllAsync(path);
-        else remInfos = await cloudDrive.GetFileListAsync(path);
-        var remote_root = new Node<CloudFileInfo>("remote_root");
-        foreach (var itm in remInfos)
-        {
-            var node = new Node<CloudFileInfo>(itm.Name, itm);
-            var paths = itm.Path.Split("/").Where(e => !string.IsNullOrEmpty(e)).ToArray();
-            remote_root.Insert(node, paths);
-        }
-        if (relocation)
-        {
-            remote_root = remote_root.GetNode(path, '/');
-            remote_root.Parent = null;
-        }
-        return remote_root;
-    }
-
 }

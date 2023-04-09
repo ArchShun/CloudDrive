@@ -1,6 +1,6 @@
 {
   "SynchFileConfig": {
-    "LocalPath": "E:\\Test",
+    "LocalPath": "Test",
     "RemotePath": "/apps/test"
   },
   "BDConfig": {

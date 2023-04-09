@@ -1,12 +1,18 @@
 ﻿using CloudDriveUI.Models;
-using CloudDriveUI.Utils;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace CloudDriveUI.ViewModels;
 
 class CloudFileViewModel : FileViewBase
 {
+
+    protected ObservableCollection<CloudFileItem> fileItems = new();
+
+
+    public CloudFileViewModel(ICloudDriveProvider cloudDrive) : base(cloudDrive)
+    {
+        SetFileItems();
+    }
 
     /// <summary>
     /// 文件操作控件
@@ -18,39 +24,26 @@ class CloudFileViewModel : FileViewBase
         new OperationItem() { Name = "新建文件夹", Icon = "FolderPlusOutline" }
     };
 
-
-
-    public CloudFileViewModel(ICloudDriveProvider cloudDrive) : base(cloudDrive)
-    {
-        SetFileItems();
-    }
-
+    /// <summary>
+    /// 需要显示的文件列表
+    /// </summary>
+    public ObservableCollection<CloudFileItem> FileItems { get => fileItems; set => SetProperty(ref fileItems, value); }
+  
+    
     protected async void SetFileItems()
     {
-        var fileInfos = await cloudDrive.GetFileListAsync("/" + string.Join("/", Paths.Skip(1)));
-        FileItems = new(fileInfos.Select(info =>
-        {
-            var file = new FileListItem()
-            {
-                Id = info.Id.ToString(),
-                Name = info.Name,
-                FileType = info.Category,
-                IsDir = info.IsDir,
-                Size = info.Size,
-                RemoteUpdate = DateTimeUtils.TimeSpanToDateTime((long)info.ServerMtime)
-            };
-            return file;
-        }));
+        var res = await cloudDrive.GetFileListAsync("/" + string.Join("/", Paths.Skip(1)));
+        var items = res.Select(e => new CloudFileItem(e)).ToArray();
+        FileItems = new ObservableCollection<CloudFileItem>(items);
     }
 
-    protected override void OpenDir(string id)
+    protected override void OpenDirAsync(FileItemBase itm)
     {
-        var itm = fileItems.FirstOrDefault(e => e?.Id == id && e.IsDir, null);
-        if (itm != null)
+        if (itm.IsDir)
         {
             try
             {
-                Paths.Add(itm.Name ?? "");
+                Paths.Add(itm.Name);
                 SetFileItems();
             }
             catch (Exception ex)

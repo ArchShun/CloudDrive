@@ -6,6 +6,10 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
+	  <Compile Remove="Models\FileListItem - 复制.cs" />
+	  <Compile Remove="ViewModels\SynchFileViewModel - 副本.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<None Remove="Resources\test.png" />
 	</ItemGroup>
 	<ItemGroup>
