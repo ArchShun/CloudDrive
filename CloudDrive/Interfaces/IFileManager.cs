@@ -14,34 +14,34 @@ public interface IFileManager
     /// <param name="path">源路径</param>
     /// <param name="dest">目标路径</param>
     /// <returns>操作是否成功</returns>
-    public Task<bool> CopyAsync(string path, string dest);
+    public Task<bool> CopyAsync(PathInfo path, PathInfo dest);
     /// <summary>
     /// 移动
     /// </summary>
     /// <param name="path">源路径</param>
     /// <param name="dest">目标路径</param>
     /// <returns>操作是否成功</returns>
-    public Task<bool> MoveAsync(string path, string dest);
+    public Task<bool> MoveAsync(PathInfo path, PathInfo dest);
     /// <summary>
     /// 重命名
     /// </summary>
     /// <param name="path">源路径</param>
     /// <param name="name">目标路径</param>
     /// <returns>操作是否成功</returns>
-    public Task<bool> RenameAsync(string path, string name);
+    public Task<bool> RenameAsync(PathInfo path, string name);
     /// <summary>
     /// 删除
     /// </summary>
     /// <param name="path">源路径</param>
     /// <returns>操作是否成功</returns>
-    public Task<bool> DeleteAsync(string path);
+    public Task<bool> DeleteAsync(PathInfo path);
     /// <summary>
     /// 上传
     /// </summary>
     /// <param name="path">文件路径</param>
     /// <param name="dest">上传到云盘路径</param>
     /// <returns></returns>
-    public Task<CloudFileInfo?> UploadAsync(string path, string dest);
+    public Task<CloudFileInfo?> UploadAsync(PathInfo path, PathInfo dest);
 
     /// <summary>
     /// 下载
@@ -49,11 +49,11 @@ public interface IFileManager
     /// <param name="path">云盘文件路径</param>
     /// <param name="dest">保存到</param>
     /// <returns>是否成功</returns>
-    public Task<bool> DownloadAsync(string path, string dest);
+    public Task<bool> DownloadAsync(PathInfo path, PathInfo dest);
 
     /// <summary>
     /// 创建文件夹
     /// </summary>
     /// <param name="path">文件夹路径</param>
-    public Task<CloudFileInfo?> CreateDirectoryAsync(string path);
+    public Task<CloudFileInfo?> CreateDirectoryAsync(PathInfo path);
 }

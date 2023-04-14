@@ -9,7 +9,7 @@ public abstract class FileItemBase
         {FileType.Picture,"FileImageOutline"},
         {FileType.Document,"FileDocumentOutline"},
         {FileType.Application,"ApplicationCogOutline"},
-        {FileType.Other,"FileQuestionOutline"},
+        {FileType.Unknown,"FileQuestionOutline"},
         {FileType.BitTorrent,"DownloadLockOutline"}
     };
 

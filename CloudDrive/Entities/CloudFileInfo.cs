@@ -6,7 +6,7 @@ public record CloudFileInfo
 {
     public long Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Path { get; set; } = string.Empty;
+    public PathInfo Path { get; set; } = new PathInfo();
     public FileType? Category { get; set; }
     public bool IsDir { get; set; } = false;
     public long Size { get; set; } = 0;

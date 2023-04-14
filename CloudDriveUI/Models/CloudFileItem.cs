@@ -3,7 +3,7 @@ using CloudDrive.Utils;
 
 namespace CloudDriveUI.Models;
 
-class CloudFileItem : FileItemBase
+public class CloudFileItem : FileItemBase
 {
     private readonly CloudFileInfo cloudFileInfo;
 
@@ -14,9 +14,9 @@ class CloudFileItem : FileItemBase
 
     #region 属性
     public override string Id => cloudFileInfo.Id.ToString();
-    public override string Name => cloudFileInfo.Name;
+    public override string Name => cloudFileInfo.Name ?? Path.GetFileName((string)cloudFileInfo.Path);
     public override bool IsDir => cloudFileInfo.IsDir;
-    public override FileType FileType => cloudFileInfo.Category ?? FileType.Other;
+    public override FileType FileType => cloudFileInfo.Category ?? FileType.Unknown;
     public override string Size => IsDir ? "--" : FileUtils.CalSize(cloudFileInfo.Size);
     public DateTime Update => DateTimeUtils.TimeSpanToDateTime(cloudFileInfo.ServerMtime);
 

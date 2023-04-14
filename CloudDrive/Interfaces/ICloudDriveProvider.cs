@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace CloudDrive.Interfaces;
 
-public interface ICloudDriveProvider : IFileInfo,IFileManager,IDriveInfo
+public interface ICloudDriveProvider : IFileInfo,IFileManager,IDriveInfo,IAuthorize
 {
 
 }

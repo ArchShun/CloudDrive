@@ -13,13 +13,21 @@
     </UserControl.Resources>
 
     <Grid>
-
         <DockPanel LastChildFill="True">
             <!--  显示文件路径  -->
-            <ListBox
-                BorderThickness="0"
-                ItemContainerStyle="{StaticResource ListBoxItemTransparent}"
-                ItemsSource="{Binding Paths}">
+            <ListBox BorderThickness="0" ItemContainerStyle="{StaticResource ListBoxItemTransparent}">
+                <ListBox.Resources>
+                    <CollectionViewSource x:Key="CurPath" Source="{Binding CurPath, Converter={StaticResource PathInfoConverter}}" />
+                </ListBox.Resources>
+                <ListBox.ItemsSource>
+                    <CompositeCollection>
+                        <ListBoxItem>
+                            <TextBlock Text="{Binding Title}" />
+                        </ListBoxItem>
+                        <CollectionContainer Collection="{Binding Source={StaticResource CurPath}}" />
+                    </CompositeCollection>
+                </ListBox.ItemsSource>
+
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="MouseUp">
                         <i:InvokeCommandAction Command="{Binding NavDirCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=SelectedIndex}" />

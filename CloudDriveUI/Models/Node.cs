@@ -22,7 +22,14 @@ public class Node<T> : IEnumerable<Node<T>>
     /// 父节点
     /// </summary>
     public Node<T>? Parent { get; set; }
-
+    /// <summary>
+    /// 兄弟节点
+    /// </summary>
+    public List<Node<T>> Sibling => Parent == null ? new List<Node<T>>() : Parent.Children.Where(n => n.Name != Name).ToList();
+    /// <summary>
+    /// 根节点
+    /// </summary>
+    public Node<T> Root => Parent == null ? this : Parent.Root;
     /// <summary>
     /// 索引器
     /// </summary>
@@ -46,13 +53,7 @@ public class Node<T> : IEnumerable<Node<T>>
     /// <summary>
     /// 路径
     /// </summary>
-    public string Path
-    {
-        get
-        {
-            return $"{Parent?.Path ?? ""}\\{Name}";
-        }
-    }
+    public string Path=> $"{Parent?.Path ?? ""}\\{Name}";
 
     public Node(string name)
     {
@@ -310,6 +311,7 @@ public class Node<T> : IEnumerable<Node<T>>
     {
         return GetEnumerator();
     }
+
 
 }
 

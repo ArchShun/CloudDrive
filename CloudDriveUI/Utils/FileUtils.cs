@@ -5,6 +5,7 @@ using System.Runtime.Intrinsics.Arm;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
 
 namespace CloudDrive.Utils;
 
@@ -93,30 +94,10 @@ public static class FileUtils
                 return k;
             }
         }
-        return FileType.Other;
+        return FileType.Unknown;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="filePath1"></param>
-    /// <param name="filePath2"></param>
-    /// <returns></returns>
-    public static bool CheckFileConsistency(string filePath1, string filePath2)
-    {
-        if (File.Exists(filePath1) && File.Exists(filePath2))
-        {
-            using (SHA256 mySHA256 = SHA256.Create())
-            {
-                var hash1 = GenerateFileSha256(mySHA256, filePath1);
-                if (hash1 == null) return false;
-                var hash2 = GenerateFileSha256(mySHA256, filePath2);
-                if (hash2 == null) return false;
-                return BitConverter.ToString(hash1).Equals(BitConverter.ToString(hash2));
-            }
-        }
-        return false;
-    }
+
     /// <summary>
     /// 根据指定文件生成哈希值
     /// </summary>
@@ -175,9 +156,9 @@ public static class FileUtils
             foreach (var dir in dirInfo.GetDirectories())
             {
                 result.Add(dir);
-                if(recursion) result.AddRange(GetAllFileInfos(dir.FullName, recursion));
+                if (recursion) result.AddRange(GetAllFileInfos(dir.FullName, recursion));
             }
-            foreach(var file in dirInfo.GetFiles())
+            foreach (var file in dirInfo.GetFiles())
             {
                 result.Add(file);
             }
@@ -190,24 +171,74 @@ public static class FileUtils
     /// </summary>
     /// <param name="path">根路径</param>
     /// <param name="recursion">是否递归</param>
-    /// <param name="relocation">是否将根路径设置到 path </param>
+    /// 
     /// <returns></returns>
-    public static Node<FileSystemInfo> GetLocalFileNode(string path, bool recursion = false, bool relocation = true)
+    public static Node<FileSystemInfo> GetLocalFileNode(string path, bool recursion = false)
     {
-        path = Path.GetFullPath(path);
-        var locInfos = GetAllFileInfos(path,recursion);
+        var dir = new DirectoryInfo(path);
+        var locInfos = GetAllFileInfos(dir.FullName, recursion).ToList();
         var root = new Node<FileSystemInfo>("root");
+        root.Insert(Node<FileSystemInfo>.FromPaths(dir.FullName), dir.FullName);
         foreach (var itm in locInfos)
         {
             var node = new Node<FileSystemInfo>(itm.Name, itm);
             root.Insert(node, itm.FullName);
         }
-        if (relocation)
-        {
-            root = root.GetNode(path);
-            root.Parent = null;
-        }
+        root = root.GetNode(dir.FullName);
+        root.Parent = null;
         return root;
+    }
+
+    /// <summary>
+    /// 检查重名文件
+    /// </summary>
+    /// <param name="localPath">需要检查的文件</param>
+    /// <returns>增加递增后缀的文件名</returns>
+    public static string LocalPathDupPolicy(string localPath)
+    {
+        localPath = Path.GetFullPath(localPath);
+        if (File.Exists(localPath) || Directory.Exists(localPath))
+        {
+            var isDir = Directory.Exists(localPath);
+            PathInfo _path = (PathInfo)localPath;
+            var ext = isDir ? "" : _path.GetExtension();
+            var name = _path.GetName(isDir);
+            var dir = _path.GetParentPath(endWithSeparator: true);
+            var count = 1;
+            var newpath = _path.GetFullPath();
+            while (isDir ? Directory.Exists(newpath) : File.Exists(newpath))
+                newpath = $"{dir}{name}_{count++}{ext}";
+            return newpath;
+        }
+        else return localPath;
+    }
+
+    /// <summary>
+    /// 路径
+    /// </summary>
+    public static string UniformPath(string path, bool endWithSeparator = false)
+    {
+        path = path.Replace("/", "\\").Trim('\\');
+        return endWithSeparator ? path + '\\' : path;
+    }
+
+    /// <summary>
+    /// 路径
+    /// </summary>
+    public static string UniformPath(IEnumerable<string> paths, bool endWithSeparator = false)
+    {
+        return UniformPath(string.Join('\\', paths), endWithSeparator);
+    }
+
+
+    public static string Parent(string path)
+    {
+        var m = Regex.Match(path, @"^.+/");
+        if (m.Success)
+        {
+            return m.Value;
+        }
+        return path;
     }
 
 }

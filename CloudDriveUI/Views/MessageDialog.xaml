@@ -4,10 +4,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:prism="http://prismlibrary.com/"
     xmlns:system="clr-namespace:System;assembly=mscorlib"
     xmlns:wpf="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
-    Width="300"
+    MaxWidth="600"
     prism:ViewModelLocator.AutoWireViewModel="True"
     mc:Ignorable="d">
 
@@ -15,15 +16,22 @@
         <ResourceDictionary Source="ResourceDictionary.xaml" />
     </UserControl.Resources>
 
-    <Grid Margin="28,16">
+    <Grid Margin="16,20">
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <TextBlock
-            Margin="0,6,0,0"
+        <TextBox
+            MaxHeight="120"
+            Padding="0"
+            VerticalAlignment="Top"
+            BorderBrush="{x:Null}"
             FontSize="18"
-            Text="{Binding}" />
+            IsEnabled="False"
+            Style="{StaticResource MaterialDesignOutlinedTextBox}"
+            Text="{Binding Mode=OneWay}"
+            TextWrapping="Wrap"
+            VerticalScrollBarVisibility="Hidden" />
 
         <StackPanel
             Grid.Row="1"

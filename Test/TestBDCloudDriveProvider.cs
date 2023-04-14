@@ -62,7 +62,7 @@ internal class TestBDCloudDriveProvider : TestControllerBase
     {
         var path = "/apps/test/测试文本.txt";
         var dest = "/apps/test/测试文本-复制.txt";
-        var res = await cloudDrive.CopyAsync(path, dest);
+        var res = await cloudDrive.CopyAsync(dest, dest);
         Console.WriteLine(res);
         // { "errno":0,"info":[{ "errno":0,"path":"\/apps\/test\/\u6d4b\u8bd5\u6587\u672c.txt"}],"request_id":9063998206588864498}
     }
@@ -71,7 +71,7 @@ internal class TestBDCloudDriveProvider : TestControllerBase
     {
         var path = "/apps/test/no/";
         var dest = "/apps/test/new_dir/";
-        var res = await cloudDrive.CopyAsync(path, dest);
+        var res = await cloudDrive.CopyAsync(dest, dest);
         Console.WriteLine(res);
         Console.WriteLine("-------------------");
 
@@ -94,7 +94,7 @@ internal class TestBDCloudDriveProvider : TestControllerBase
     {
         var path = "/apps/test/no/";
         var dest = "/apps/test/new_dir/";
-        var res = await cloudDrive.MoveAsync(path, dest);
+        var res = await cloudDrive.MoveAsync(dest, dest);
         Console.WriteLine(res);
     }
 
@@ -124,7 +124,7 @@ internal class TestBDCloudDriveProvider : TestControllerBase
         Console.WriteLine(res);
     }
 
-    //[TestMethod]
+    [TestMethod]
     public async Task TestGetFileListAllAsync()
     {
         var list = await cloudDrive.GetFileListAllAsync("/apps/test/");

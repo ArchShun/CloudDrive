@@ -10,11 +10,11 @@ namespace CloudDriveUI.ViewModels;
 public static class DialogHostExtentions
 {
 
-    public static async Task ShowMessageDialogAsync(string message)
+    public static Task ShowMessageDialog(string message)
     {
         var dialog = new MessageDialog();
         dialog.DataContext = message;
-        await DialogHost.Show(dialog, "RootDialog");
+        return DialogHost.Show(dialog, "RootDialog");
     }
 
     /// <summary>
@@ -72,8 +72,12 @@ public static class DialogHostExtentions
 
     public static void CloseCircleProgressBar()
     {
-        DialogHost.Close("ProgressBar");
+        if (DialogHost.IsDialogOpen("ProgressBar"))
+            DialogHost.Close("ProgressBar");
     }
 
-
+    public static void SelectFileDialog()
+    {
+        throw new NotImplementedException();
+    }
 }

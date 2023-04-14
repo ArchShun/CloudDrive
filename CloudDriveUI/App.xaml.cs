@@ -5,13 +5,13 @@ using Microsoft.Extensions.Configuration;
 using CloudDriveUI.Models;
 using Microsoft.Extensions.DependencyInjection;
 using DependencyInjection;
-using Microsoft.Extensions.Logging;
-using BDCloudDrive.Entities;
 using Prism.Commands;
 using System.Text.Json.Nodes;
 using System.Text;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration.Json;
+using NLog.Extensions.Logging;
+using DryIoc;
+using Microsoft.Extensions.Logging;
+using CloudDriveUI.ViewModels;
 
 namespace CloudDriveUI;
 
@@ -22,12 +22,24 @@ public partial class App
 {
     protected override Window CreateShell()
     {
+        var drive = Container.Resolve<ICloudDriveProvider>();
+        while (true)
+        {
+            if (drive.Authorize()) break;
+            else if( MessageBox.Show("授权失败，是否重试？","info",MessageBoxButton.OKCancel)==MessageBoxResult.Cancel) Environment.Exit(0);
+        }
         return Container.Resolve<MainWindow>();
     }
     private readonly string confPath = "config.json";
     // 程序退出时保存修改的配置
     private readonly Dictionary<string, object?> toUpdateConfigs = new();
     private DelegateCommand? SaveConfigCommand;
+
+
+    protected override void InitializeShell(Window shell)
+    {
+        base.InitializeShell(shell);
+    }
 
     protected override void RegisterTypes(IContainerRegistry containerRegistry)
     {
@@ -47,13 +59,7 @@ public partial class App
             ConfigurationBuilder builder = new ConfigurationBuilder();
             builder.AddJsonFile(confPath, true, true);
             IConfigurationRoot root = builder.Build();
-            service.AddOptions()
-                .Configure<AppConfig>(opt => root.Bind(opt))
-                .Configure<BDConfig>(opt =>
-                {
-                    root.GetSection("BDConfig").Bind(opt);
-                    toUpdateConfigs.Add("BDConfig", opt);
-                });
+            service.AddOptions().Configure<AppConfig>(opt => root.Bind(opt));
             // 退出程序时保存修改的配置
             SaveConfigCommand = new(() =>
             {
@@ -78,8 +84,7 @@ public partial class App
             // 注册日志
             service.AddLogging(builder =>
             {
-                builder.AddConsole();
-                builder.SetMinimumLevel(LogLevel.Trace);
+                builder.AddNLog();
             });
 
             // 注册缓存
@@ -94,5 +99,17 @@ public partial class App
     {
         SaveConfigCommand?.Execute();
         base.OnExit(e);
+    }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+    }
+
+    private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        var logger = Container.Resolve<ILogger<App>>();  
+        logger.LogError(e.Exception,e.Exception.Message");
     }
 }

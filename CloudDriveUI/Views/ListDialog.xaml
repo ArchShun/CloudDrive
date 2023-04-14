@@ -28,9 +28,16 @@
             ItemsSource="{Binding ListItems}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBox
+                    <!--<TextBox
                         Margin="0,6,0,0"
                         wpf:HintAssist.Hint="{Binding Key}"
+                        FontSize="18"
+                        Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                        Text="{Binding Value}" />-->
+                    <TextBox
+                        Margin="0,6"
+                        VerticalAlignment="Center"
+                        md:HintAssist.Hint="{Binding Key}"
                         FontSize="18"
                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"
                         Text="{Binding Value}" />
@@ -39,7 +46,6 @@
         </ListBox>
         <StackPanel
             Grid.Row="1"
-            Margin="0,16,0,0"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
             <Button

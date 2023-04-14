@@ -2,12 +2,14 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converter="clr-namespace:CloudDriveUI.Converters"
-    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes">
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
 
 
     <converter:SyncStateBadgeIconConverter x:Key="SyncStateBadgeIconConverter" />
     <converter:SyncStateBadgeColorConverter x:Key="SyncStateBadgeColorConverter" />
     <converter:DataTimeConverter x:Key="DataTimeConverter" />
+    <converter:PathInfoConverter x:Key="PathInfoConverter" />
 
     <Style
         x:Key="FileListViewStyle"
@@ -15,7 +17,7 @@
         TargetType="DataGrid">
         <Style.Setters>
             <Setter Property="Margin" Value="0,10" />
-            <Setter Property="md:DataGridAssist.SelectedCellBorderBrush" Value="Transparent" />
+            <Setter Property="materialDesign:DataGridAssist.SelectedCellBorderBrush" Value="Transparent" />
             <Setter Property="AutoGenerateColumns" Value="False" />
             <Setter Property="CanUserAddRows" Value="False" />
             <Setter Property="HeadersVisibility" Value="Column" />
@@ -58,39 +60,12 @@
     </Style>
 
 
-    <DataTemplate x:Key="CloudFileLiseViewNameCol">
-        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-            <md:PackIcon
-                Width="20"
-                Height="20"
-                Kind="{Binding Icon}" />
-            <TextBlock
-                Margin="8,0"
-                VerticalAlignment="Center"
-                Text="{Binding Name}" />
-        </StackPanel>
-    </DataTemplate>
+   
 
-    <DataTemplate x:Key="FileLiseViewNameCol">
-        <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
-            <md:PackIcon
-                Width="20"
-                Height="20"
-                Kind="{Binding Icon}" />
-            <md:Badged
-                Margin="0,4,0,0"
-                BadgeBackground="Transparent"
-                BadgeForeground="{Binding State, Converter={StaticResource SyncStateBadgeColorConverter}}">
-                <md:Badged.Badge>
-                    <md:PackIcon Kind="{Binding State, Converter={StaticResource SyncStateBadgeIconConverter}}" />
-                </md:Badged.Badge>
-            </md:Badged>
-            <TextBlock
-                Margin="8,0"
-                VerticalAlignment="Center"
-                Text="{Binding Name}" />
-        </StackPanel>
-    </DataTemplate>
+   
+
+
+
 
 
 

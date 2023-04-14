@@ -1,5 +1,6 @@
 ﻿using BDCloudDrive.Entities;
 using System.ComponentModel;
+using System.DirectoryServices.ActiveDirectory;
 using System.Reflection;
 
 namespace BDCloudDrive;
@@ -8,7 +9,7 @@ public static class DataConvert
 {
     private static readonly Dictionary<int, FileType> FileTypeDict = new()
     {
-        { 1,FileType.Video },{2,FileType.Audio},{3,FileType.Picture},{4,FileType.Document},{5,FileType.Application},{6,FileType.Other},{7,FileType.BitTorrent}
+        { 1,FileType.Video },{2,FileType.Audio},{3,FileType.Picture},{4,FileType.Document},{5,FileType.Application},{6,FileType.Unknown},{7,FileType.BitTorrent}
     };
 
     public static FileType? ToFileType(int bd_category)
@@ -20,7 +21,7 @@ public static class DataConvert
     {
         var info = new CloudFileInfo()
         {
-            Path = result.Path,
+            Path = (PathInfo)result.Path,
             Name = result.Server_Filename,
             IsDir = result.Isdir == 1,
             ServerCtime = result.Ctime,
@@ -65,7 +66,8 @@ public static class DataConvert
                     // 否则强制类型转换
                     else try
                         {
-                            val = Convert.ChangeType(kv.Value.GetValue(result), infoProp.PropertyType);
+                            Type property_type = infoProp.PropertyType;
+                            val = Convert.ChangeType(kv.Value.GetValue(result), property_type);
                         }
                         catch { }
                     if (val == null)
@@ -84,6 +86,7 @@ public static class DataConvert
         namemapper.Add(nameof(result.Server_Filename), nameof(info.Name));
         var converts = new Dictionary<string, Func<FileInfoResult, object?>>();
         converts.Add(nameof(result.Category), res => ToFileType(res.Category));
+        converts.Add(nameof(result.Path), res => new PathInfo(res.Path));
         ObjectToCloudFileInfo(result, ref info, namemapper, converts);
         return info;
     }

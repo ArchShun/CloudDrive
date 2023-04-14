@@ -9,9 +9,15 @@ namespace BDCloudDrive
     internal class FileUtils
     {
 
+        /// <summary>
+        /// 百度网盘路径
+        /// </summary>
+        /// <param name="path">以 / 开头，末尾没有 / </param>
+        /// <returns></returns>
         public static string Path(string path)
         {
-           return Regex.Replace(path, @"\\+", "/");
+            if (string.IsNullOrEmpty(path) || path == ".") return "/";
+            return '/' + path.Replace("\\", "/").Trim('/');
         }
 
         public static string Parent(string path)
