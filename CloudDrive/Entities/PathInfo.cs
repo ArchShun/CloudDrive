@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CloudDrive.Entities;
@@ -13,16 +12,16 @@ public class PathInfo
     private bool _readonly = false;
 
 
-    public char Separator { get; private set; }= Path.DirectorySeparatorChar;
+    public char Separator { get; private set; } = Path.DirectorySeparatorChar;
 
     #region 构造方法
     public PathInfo() { }
-    public PathInfo(string path) 
+    public PathInfo(string path)
     {
         _data = path;
     }
 
-    public PathInfo(IEnumerable<string> paths) 
+    public PathInfo(IEnumerable<string> paths)
     {
         _data = string.Join(Separator, paths);
     }
@@ -33,6 +32,7 @@ public class PathInfo
         _readonly = true;
         return this;
     }
+
 
     /// <summary>
     /// 获取全路径名
@@ -71,19 +71,7 @@ public class PathInfo
         if (endWithSeparator) res += separator;
         return res;
     }
-    /// <summary>
-    /// 修改分隔符
-    /// </summary>
-    /// <param name="separator">分隔符</param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
-    public PathInfo ChangeSeparator(char separator)
-    {
-        if (_readonly) throw new InvalidOperationException();
-        if (separator != '\\' && separator != '/') throw new ArgumentException("分隔符只能是\\或者/");
-        Separator = separator;
-        return this;
-    }
+
     /// <summary>
     /// 获取扩展名，包含 . 符号
     /// </summary>
@@ -103,26 +91,37 @@ public class PathInfo
         return new PathInfo(_data);
     }
     /// <summary>
-    /// 拼接路径,直接修改源对象，不会创建副本
+    /// 拼接路径
     /// </summary>
-    /// <param name="paths"></param>
+    /// <param name="path">拼接路径</param>
+    /// <param name="duplicate">返回副本，不修改原对象</param>
     /// <returns></returns>
-    public PathInfo Join(string path)
+    public PathInfo Join(string path, bool duplicate = true)
     {
-        if (_readonly) throw new InvalidOperationException();
-        _data += Separator + path;
+        if (duplicate) return new PathInfo(_data + Separator + path);
+        else if (_readonly) throw new InvalidOperationException();
+        else _data += Separator + path;
         return this;
     }
-    public PathInfo Join(PathInfo path)
+    /// <summary>
+    /// 拼接路径
+    /// </summary>
+    /// <param name="path">拼接路径</param>
+    /// <param name="duplicate">返回副本，不修改原对象</param>
+    /// <returns></returns>
+    public PathInfo Join(PathInfo path, bool duplicate = true)
     {
-        if (_readonly) throw new InvalidOperationException();
-        return Join(path.GetFullPath());
+        return Join(path.GetFullPath(), duplicate);
     }
-    public PathInfo Join(IEnumerable<string> paths)
+    /// <summary>
+    /// 拼接路径
+    /// </summary>
+    /// <param name="paths">拼接路径</param>
+    /// <param name="duplicate">返回副本，不修改原对象</param>
+    /// <returns></returns>
+    public PathInfo Join(IEnumerable<string> paths, bool duplicate = true)
     {
-        if (_readonly) throw new InvalidOperationException();
-        _data += Separator + string.Join(Separator, paths);
-        return this;
+        return Join(string.Join(Separator, paths), duplicate);
     }
     /// <summary>
     /// 获取相对路径

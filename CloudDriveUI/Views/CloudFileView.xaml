@@ -28,13 +28,21 @@
                     CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
                     Header="重命名">
                     <MenuItem.Icon>
+                        <materialDesign:PackIcon Kind="RenameOutline" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem
+                    Command="{Binding DeleteCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
+                    Header="删除">
+                    <MenuItem.Icon>
                         <materialDesign:PackIcon Kind="FolderEditOutline" />
                     </MenuItem.Icon>
                 </MenuItem>
             </CompositeCollection>
 
             <!--  通用上下文菜单项  -->
-            <CompositeCollection x:Key="GenericContextMenuItems">
+            <CompositeCollection x:Key="GenericContextMenuItems" x:Shared="False">
                 <MenuItem Command="{Binding CreateDirCommand}" Header="新建文件夹">
                     <MenuItem.Icon>
                         <materialDesign:PackIcon Kind="FolderPlusOutline" />
@@ -78,6 +86,14 @@
                 </ContextMenu.ItemsSource>
             </ContextMenu>
 
+            <!--  单元格样式绑定单元格上下文菜单  -->
+            <Style
+                x:Key="CellStyle"
+                BasedOn="{StaticResource MaterialDesignDataGridCell}"
+                TargetType="DataGridCell">
+                <Setter Property="ContextMenu" Value="{StaticResource CellContextMenu}" />
+            </Style>
+
             <!--  文件列表名称单元  -->
             <DataTemplate x:Key="ItemListNameCol">
                 <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
@@ -91,14 +107,6 @@
                         Text="{Binding Name}" />
                 </StackPanel>
             </DataTemplate>
-
-            <!--  单元格样式绑定单元格上下文菜单  -->
-            <Style
-                x:Key="CellStyle"
-                BasedOn="{StaticResource MaterialDesignDataGridCell}"
-                TargetType="DataGridCell">
-                <Setter Property="ContextMenu" Value="{StaticResource CellContextMenu}" />
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -110,8 +118,6 @@
 
         <!--  标题栏，显示文件路径  -->
         <local:FileRegionTitleBar />
-
-
 
         <!--  内容栏，显示文件列表  -->
         <DataGrid

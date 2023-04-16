@@ -1,4 +1,5 @@
 ﻿using CloudDriveUI.Models;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using Prism.Commands;
 using System.Windows;
@@ -10,6 +11,7 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
 
     protected readonly ICloudDriveProvider cloudDrive;
     protected readonly ILogger logger;
+    protected readonly ISnackbarMessageQueue snackbar;
 
     private PathInfo curPath;
 
@@ -23,8 +25,9 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// </summary>
     public List<OperationItem> ContextMenuItems { get; init; } = new List<OperationItem>();
 
-    public FileViewBase(ICloudDriveProvider cloudDrive, ILogger logger)
+    public FileViewBase(ICloudDriveProvider cloudDrive, ILogger logger, ISnackbarMessageQueue snackbarMessageQueue)
     {
+        snackbar = snackbarMessageQueue;
         this.cloudDrive = cloudDrive;
         this.logger = logger;
         curPath = new PathInfo();

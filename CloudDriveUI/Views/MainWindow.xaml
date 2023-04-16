@@ -3,8 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:prism="http://prismlibrary.com/"
     Title="{Binding Title}"
     Width="1100"
@@ -15,26 +15,28 @@
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 
-    <md:DialogHost
+    <materialDesign:DialogHost
         Identifier="RootDialog"
         OverlayBackground="Gray"
         SnackbarMessageQueue="{Binding ElementName=MainSnackbar, Path=MessageQueue}">
-        <md:DialogHost.DialogContent>
+        <materialDesign:DialogHost.DialogContent>
             <StackPanel />
-        </md:DialogHost.DialogContent>
-        <md:DialogHost
+        </materialDesign:DialogHost.DialogContent>
+        <materialDesign:DialogHost
             DialogBackground="Transparent"
             Identifier="ProgressBar"
             OverlayBackground="LightGray">
-            <md:DialogHost.DialogContent>
+            <materialDesign:DialogHost.DialogContent>
                 <StackPanel />
-            </md:DialogHost.DialogContent>
+            </materialDesign:DialogHost.DialogContent>
 
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
+
+
                 <Grid Grid.Column="0" Background="#f5f5f5">
                     <Grid.RowDefinitions>
                         <RowDefinition />
@@ -62,44 +64,52 @@
                             VerticalAlignment="Center"
                             Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
                             Text="{Binding UserInfo.Name}" />
-                        <md:PopupBox
+                        <materialDesign:PopupBox
                             Margin="10"
                             HorizontalAlignment="Right"
-                            IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
-                            PlacementMode="TopAndAlignLeftEdges"
-                            ToggleCheckedContentCommand="{Binding FloatingActionDemoCommand}"
-                            ToggleCheckedContentCommandParameter="wowsers">
-                            <md:PopupBox.ToggleCheckedContent>
-                                <md:PackIcon
+                            PlacementMode="TopAndAlignLeftEdges">
+                            <materialDesign:PopupBox.ToggleCheckedContent>
+                                <materialDesign:PackIcon
                                     Width="24"
                                     Height="24"
                                     Background="LightBlue"
                                     BorderBrush="Transparent"
                                     Kind="Pencil" />
-                            </md:PopupBox.ToggleCheckedContent>
+                            </materialDesign:PopupBox.ToggleCheckedContent>
                             <ListBox ItemsSource="{Binding OperationItems}">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal">
-                                            <md:PackIcon Margin="5,0" Kind="{Binding Icon}" />
+                                            <materialDesign:PackIcon Margin="5,0" Kind="{Binding Icon}" />
                                             <TextBlock Margin="5,0" Text="{Binding Name}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>
-                        </md:PopupBox>
+                        </materialDesign:PopupBox>
                     </DockPanel>
                 </Grid>
 
                 <!--  内容区域  -->
-                <ContentControl
-                    Grid.Column="1"
-                    Margin="20,30,20,40"
-                    prism:RegionManager.RegionName="ContentRegion" />
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <materialDesign:Snackbar
+                        x:Name="MainSnackbar"
+                        Grid.Row="0"
+                        Margin="30"
+                        Panel.ZIndex="10"
+                        Background="#80000000"
+                        MessageQueue="{Binding MainSnackbarMessageQueue}" />
+                    <ContentControl
+                        Grid.Row="0"
+                        Margin="20,30,20,40"
+                        prism:RegionManager.RegionName="ContentRegion" />
 
-
+                </Grid>
             </Grid>
 
-        </md:DialogHost>
-    </md:DialogHost>
+        </materialDesign:DialogHost>
+    </materialDesign:DialogHost>
 </Window>

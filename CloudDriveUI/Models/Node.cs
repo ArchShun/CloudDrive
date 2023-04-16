@@ -53,7 +53,7 @@ public class Node<T> : IEnumerable<Node<T>>
     /// <summary>
     /// 路径
     /// </summary>
-    public string Path=> $"{Parent?.Path ?? ""}\\{Name}";
+    public string Path => $"{Parent?.Path ?? ""}\\{Name}";
 
     public Node(string name)
     {
@@ -91,6 +91,17 @@ public class Node<T> : IEnumerable<Node<T>>
         if (string.IsNullOrEmpty(path)) return this;
         var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return GetNode(paths);
+    }
+
+    public bool TryGetNode(string path, out Node<T>? node)
+    {
+        node = null;
+        try
+        {
+            node = GetNode(path);
+            return true;
+        }
+        catch { return false; }
     }
 
 

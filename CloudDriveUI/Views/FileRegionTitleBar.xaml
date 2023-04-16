@@ -55,10 +55,7 @@
                     Height="30"
                     Background="LightBlue"
                     BorderBrush="Transparent"
-                    IsEnabled="{Binding DataContext.ControlsEnabled, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"
                     PlacementMode="BottomAndAlignRightEdges"
-                    ToggleCheckedContentCommand="{Binding FloatingActionDemoCommand}"
-                    ToggleCheckedContentCommandParameter="wowsers"
                     ToolTip="PopupBox, Style MaterialDesignMultiFloatingActionAccentPopupBox">
                     <materialDesign:PopupBox.ToggleCheckedContent>
                         <materialDesign:PackIcon
@@ -72,14 +69,13 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="MouseUp">
+                                            <i:InvokeCommandAction Command="{Binding Command}" CommandParameter="{Binding}" />
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
                                     <materialDesign:PackIcon Margin="5,0" Kind="{Binding Icon}" />
-                                    <TextBlock Margin="5,0" Text="{Binding Name}">
-                                        <i:Interaction.Triggers>
-                                            <i:EventTrigger EventName="MouseUp">
-                                                <i:InvokeCommandAction Command="{Binding Command}" CommandParameter="{Binding}" />
-                                            </i:EventTrigger>
-                                        </i:Interaction.Triggers>
-                                    </TextBlock>
+                                    <TextBlock Margin="5,0" Text="{Binding Name}" />
                                 </StackPanel>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
@@ -87,6 +83,5 @@
                 </materialDesign:PopupBox>
             </Grid>
         </DockPanel>
-
     </Grid>
 </UserControl>

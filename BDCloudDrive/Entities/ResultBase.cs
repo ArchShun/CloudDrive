@@ -1,4 +1,6 @@
-﻿namespace BDCloudDrive.Entities;
+﻿using Microsoft.Extensions.Logging;
+
+namespace BDCloudDrive.Entities;
 
 /// <summary>
 /// 检查错误码
@@ -10,17 +12,23 @@ public record ResultBase
     {
         Errno = errno;
     }
+
     /// <summary>
-    /// 确保无返回错误
+    /// 检查错误
     /// </summary>
+    /// <param name="logger">直接记录到日志，不抛出异常</param>
+    /// <param name="message">日志信息</param>
     /// <exception cref="BDError">内部错误</exception>
-    public void EnsureErrnoCode()
+    public void CheckErrnoCode(ILogger? logger = null, string? message = null)
     {
-        if (!IsSeccess()) throw new BDError(Errno);
+        if (IsSeccess()) return;
+        var err = new BDError(Errno);
+        if (logger == null) throw err;
+        else logger.LogError(err, message??err.Message);
     }
     public bool IsSeccess()
     {
-        return Errno == 0;  
+        return Errno == 0;
     }
 }
 

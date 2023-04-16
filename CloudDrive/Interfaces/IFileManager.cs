@@ -1,4 +1,5 @@
 ﻿using CloudDrive.Entities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace CloudDrive.Interfaces;
@@ -30,11 +31,31 @@ public interface IFileManager
     /// <returns>操作是否成功</returns>
     public Task<bool> RenameAsync(PathInfo path, string name);
     /// <summary>
-    /// 删除
+    /// 删除单个文件
     /// </summary>
     /// <param name="path">源路径</param>
     /// <returns>操作是否成功</returns>
     public Task<bool> DeleteAsync(PathInfo path);
+    /// <summary>
+    /// 删除多个文件
+    /// </summary>
+    /// <param name="files">文件路径列表</param>
+    /// <returns>是否成功</returns>
+    public Task<bool> DeleteAsync(IEnumerable<PathInfo> files);
+
+    /// <summary>
+    /// 删除文件夹
+    /// </summary>
+    /// <param name="path">文件夹路径</param>
+    /// <returns>删除是否成功</returns>
+    Task<bool> DeleteDirAsync(PathInfo path);
+    /// <summary>
+    /// 删除多个文件夹
+    /// </summary>
+    /// <param name="paths">文件夹路径</param>
+    /// <returns>删除是否成功</returns>
+    Task<bool> DeleteDirAsync(IEnumerable<PathInfo> paths);
+
     /// <summary>
     /// 上传
     /// </summary>
@@ -56,4 +77,11 @@ public interface IFileManager
     /// </summary>
     /// <param name="path">文件夹路径</param>
     public Task<CloudFileInfo?> CreateDirectoryAsync(PathInfo path);
+    /// <summary>
+    /// 上传文件夹
+    /// </summary>
+    /// <param name="src">本地文件夹</param>
+    /// <param name="dest">目标文件夹</param>
+    /// <returns>上传成功的文件</returns>
+    public Task<IEnumerable<CloudFileInfo>> UploadDirAsync(PathInfo src, PathInfo dest);
 }

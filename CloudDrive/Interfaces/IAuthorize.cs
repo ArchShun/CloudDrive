@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace CloudDrive.Interfaces;
+﻿namespace CloudDrive.Interfaces;
 
 public interface IAuthorize
 {

@@ -67,9 +67,9 @@ public class SyncFileItem : FileItemBase
     public DateTime? LocalUpdate => localInfo?.LastWriteTime;
 
     /// <summary>
-    /// 同步状态
+    /// 同步状态, 文件夹节点的状态由子节点状态决定
     /// </summary>
-    public SynchState State { get; private set; }
+    public SynchState State { get; private set; } = SynchState.Unknown;
 
     public PathInfo? LocalPath => localInfo != null ? (PathInfo)localInfo.FullName : null;
     public PathInfo? RemotePath => remoteInfo?.Path;
@@ -139,13 +139,8 @@ public class SyncFileItem : FileItemBase
         foreach (var node in root.Where(n => n.Value != null && n.Children.Count > 0))
         {
             SyncFileItem itm = node.Value!;
-            if (node.Children.Any(n => n.Value?.State == SynchState.Modified)) itm.State = SynchState.Modified;
-            else if (node.Children.Any(n => n.Value?.State == SynchState.ToUpdate)) itm.State = SynchState.ToUpdate;
-            else if (node.Children.Any(n => n.Value?.State == SynchState.Added)) itm.State = SynchState.Added;
-            else if (node.Children.Any(n => n.Value?.State == SynchState.Deleted)) itm.State = SynchState.Deleted;
-            else if (node.Children.Any(n => n.Value?.State == SynchState.Conflict)) itm.State = SynchState.Conflict;
-            else if (node.Children.Any(n => n.Value?.State == SynchState.Consistent)) itm.State = SynchState.Consistent;
-            else itm.State = SynchState.Detached;
+            foreach (var child in node.Children)
+                if (child.Value?.State != null) itm.State |= child.Value.State;
         }
     }
 }

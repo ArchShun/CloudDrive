@@ -12,6 +12,7 @@ using NLog.Extensions.Logging;
 using DryIoc;
 using Microsoft.Extensions.Logging;
 using CloudDriveUI.ViewModels;
+using MaterialDesignThemes.Wpf;
 
 namespace CloudDriveUI;
 
@@ -45,6 +46,7 @@ public partial class App
     {
         // 注册类型
         containerRegistry.Register<NavigationBar>();
+        containerRegistry.RegisterSingleton<ISnackbarMessageQueue, SnackbarMessageQueue>();
 
         // 注册导航
         containerRegistry.RegisterForNavigation<CloudFileView>();
@@ -110,6 +112,6 @@ public partial class App
     private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
         var logger = Container.Resolve<ILogger<App>>();  
-        logger.LogError(e.Exception,e.Exception.Message");
+        logger.LogError(e.Exception,e.Exception.Message);
     }
 }

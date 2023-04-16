@@ -2,7 +2,7 @@
 
 namespace BDCloudDrive.Entities;
 
-internal class BDError : Exception
+public class BDError : Exception
 {
 
     public int Errno { get; set; }

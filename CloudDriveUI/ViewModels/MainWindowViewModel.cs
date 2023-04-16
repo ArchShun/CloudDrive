@@ -1,7 +1,10 @@
 ﻿using BDCloudDrive.Entities;
 using CloudDriveUI.Models;
+using DryIoc;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Options;
 using Prism.Commands;
+using Prism.Ioc;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -12,8 +15,9 @@ public class MainWindowViewModel : BindableBase
     private List<OperationItem> operationItems;
     private string title;
     private UserInfo? userInfo;
+    public ISnackbarMessageQueue MainSnackbarMessageQueue { get; set; }
 
-    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive)
+    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, ISnackbarMessageQueue snackbarMessageQueue)
     {
         title = "CloudDrive";
         operationItems = new List<OperationItem>()
@@ -22,8 +26,9 @@ public class MainWindowViewModel : BindableBase
         };
         regionManager.RegisterViewWithRegion("NavigateRegion", "NavigationBar");
         UserInfo = Task.Run(() => cloudDrive.GetUserInfoAsync()).Result;
-    }
 
+        MainSnackbarMessageQueue = snackbarMessageQueue;
+    }
     public string Title
     {
         get { return title; }

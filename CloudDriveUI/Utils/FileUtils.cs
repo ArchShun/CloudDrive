@@ -184,8 +184,11 @@ public static class FileUtils
             var node = new Node<FileSystemInfo>(itm.Name, itm);
             root.Insert(node, itm.FullName);
         }
-        root = root.GetNode(dir.FullName);
-        root.Parent = null;
+        if (root.TryGetNode(dir.FullName, out Node<FileSystemInfo>? pathNode))
+        {
+            pathNode!.Parent = null;
+            return pathNode;
+        }
         return root;
     }
 
@@ -213,32 +216,5 @@ public static class FileUtils
         else return localPath;
     }
 
-    /// <summary>
-    /// 路径
-    /// </summary>
-    public static string UniformPath(string path, bool endWithSeparator = false)
-    {
-        path = path.Replace("/", "\\").Trim('\\');
-        return endWithSeparator ? path + '\\' : path;
-    }
-
-    /// <summary>
-    /// 路径
-    /// </summary>
-    public static string UniformPath(IEnumerable<string> paths, bool endWithSeparator = false)
-    {
-        return UniformPath(string.Join('\\', paths), endWithSeparator);
-    }
-
-
-    public static string Parent(string path)
-    {
-        var m = Regex.Match(path, @"^.+/");
-        if (m.Success)
-        {
-            return m.Value;
-        }
-        return path;
-    }
 
 }
