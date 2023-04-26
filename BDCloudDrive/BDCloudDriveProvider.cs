@@ -406,9 +406,17 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         if ((info?.XData.TryGetValue("dlink", out object? dlink) ?? false) && dlink != null)
         {
             var _tmp_dir = $@"{Guid.NewGuid()}";
+            try
+            {
+                Directory.CreateDirectory(_tmp_dir);
+            }
+            catch
+            {
+                return new ResponseMessage(false, "创建临时文件夹失败");
+            }
             var url = $"{dlink}&access_token={AccessToken}";
             ConcurrentBag<ResponseMessage> resutls = new(); // 分片文件下载结果
-            long sliceSize = 1024 * 1024 * 4; // 分片文件大小
+            long sliceSize = 1024 * 1024 * 10; // 分片文件大小
 
             int running = 0; // 同时下载数量
             List<Task> tasks = new(); // 下载任务队列
@@ -416,7 +424,8 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
             for (long start = 0; start < info.Size; start += sliceSize) starts.Enqueue(start);
             while (starts.Count > 0)
             {
-                while (running > 5) await Task.Delay(500);
+                await Task.Delay(1000);
+                while (running > 4) await Task.Delay(500);
                 lock (this) running++;
                 var start = starts.Dequeue();
                 tasks.Add(Task.Run(async () =>

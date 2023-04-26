@@ -19,24 +19,20 @@
                 <ResourceDictionary Source="ResourceDictionary.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <Style BasedOn="{StaticResource MaterialDesignTextBox}"
-                   TargetType="{x:Type TextBox}">
+            <Style BasedOn="{StaticResource MaterialDesignTextBox}" TargetType="{x:Type TextBox}">
                 <Setter Property="Margin" Value="8" />
             </Style>
 
-            <Style BasedOn="{StaticResource MaterialDesignLabel}"
-                   TargetType="Label">
+            <Style BasedOn="{StaticResource MaterialDesignLabel}" TargetType="Label">
                 <Setter Property="Margin" Value="4" />
             </Style>
 
-            <Style BasedOn="{StaticResource MaterialDesignTabControl}"
-                   TargetType="{x:Type TabControl}">
+            <Style BasedOn="{StaticResource MaterialDesignTabControl}" TargetType="{x:Type TabControl}">
                 <Setter Property="HorizontalAlignment" Value="Stretch" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
             </Style>
 
-            <Style BasedOn="{StaticResource MaterialDesignGroupBox}"
-                   TargetType="{x:Type GroupBox}">
+            <Style BasedOn="{StaticResource MaterialDesignGroupBox}" TargetType="{x:Type GroupBox}">
                 <Setter Property="HorizontalAlignment" Value="Stretch" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="Margin" Value="0,8" />
@@ -44,33 +40,13 @@
             </Style>
 
 
-            <Style BasedOn="{StaticResource MaterialDesignSwitchToggleButton}"
-                   TargetType="ToggleButton">
+            <Style BasedOn="{StaticResource MaterialDesignSwitchToggleButton}" TargetType="ToggleButton">
                 <Setter Property="Margin" Value="0,0,10,0" />
             </Style>
             <Style TargetType="Separator">
                 <Setter Property="Margin" Value="0,4" />
                 <Setter Property="Visibility" Value="Hidden" />
             </Style>
-
-            <DataTemplate x:Key="SynchTabItem"
-                          DataType="TabItem">
-                <TextBox x:Name="LocalPath"
-                         Grid.Row="0"
-                         Grid.Column="1"
-                         materialDesign:HintAssist.HelperText="输入本地路径"
-                         materialDesign:HintAssist.Hint="Input Local Directory">
-                    <TextBox.Text>
-                        <Binding Mode="TwoWay"
-                                 Path="LocalPath"
-                                 UpdateSourceTrigger="PropertyChanged">
-                            <Binding.ValidationRules>
-                                <local_vr:DirectoryExistValidationRule ValidatesOnTargetUpdated="True" />
-                            </Binding.ValidationRules>
-                        </Binding>
-                    </TextBox.Text>
-                </TextBox>
-            </DataTemplate>
 
         </ResourceDictionary>
     </UserControl.Resources>
@@ -82,24 +58,25 @@
         </Grid.RowDefinitions>
 
         <!--  标题行  -->
-        <TextBlock Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                   Text="配置中心" />
+        <ListBox BorderThickness="0"
+                 ItemContainerStyle="{StaticResource ListBoxItemTransparent}"
+                 Style="{StaticResource PathsListStyle}">
+            <ListBoxItem Content="配置中心" />
+        </ListBox>
         <!--  配置选项卡  -->
         <TabControl Name="ConfigTabControl"
                     Grid.Row="1"
-                    SelectedIndex="0">
+                    SelectedIndex="{Binding SelectedIndex}">
             <!--  切换选项卡、退出配置时保存配置  -->
             <i:Interaction.Triggers>
                 <i:PropertyChangedTrigger Binding="{Binding SelectedItem, ElementName=ConfigTabControl}">
-                    <i:CallMethodAction MethodName="Save"
-                                        TargetObject="{Binding AppConfig}" />
+                    <i:CallMethodAction MethodName="Save" TargetObject="{Binding AppConfig}" />
                 </i:PropertyChangedTrigger>
                 <i:EventTrigger EventName="Unloaded">
-                    <i:CallMethodAction MethodName="Save"
-                                        TargetObject="{Binding AppConfig}" />
+                    <i:CallMethodAction MethodName="Save" TargetObject="{Binding AppConfig}" />
                 </i:EventTrigger>
             </i:Interaction.Triggers>
-            <!--<TabItem Header="云盘授权管理">
+            <TabItem Header="云盘授权管理">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -109,8 +86,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <materialDesign:PackIcon VerticalAlignment="Center"
-                                             Kind="Account" />
+                    <materialDesign:PackIcon VerticalAlignment="Center" Kind="Account" />
                     <materialDesign:PackIcon Grid.Row="1"
                                              VerticalAlignment="Center"
                                              Kind="Key" />
@@ -121,8 +97,7 @@
                              materialDesign:HintAssist.Hint="User Name"
                              materialDesign:TextFieldAssist.HasClearButton="True">
                         <TextBox.Text>
-                            <Binding Path="UserLogin.Id"
-                                     UpdateSourceTrigger="PropertyChanged">
+                            <Binding Path="UserLogin.Id" UpdateSourceTrigger="PropertyChanged">
                                 <Binding.ValidationRules>
                                     <local_vr:NotEmptyValidationRule ValidatesOnTargetUpdated="True" />
                                 </Binding.ValidationRules>
@@ -138,14 +113,13 @@
                                  materialDesign:TextFieldAssist.HasClearButton="True"
                                  IsEnabled="{Binding ElementName=RevealPasswordFloatingEnabled, Path=IsChecked}" />
                 </Grid>
-            </TabItem>-->
-            <TabItem Header="文件同步设置"
-                     Name="Synch"
-                     DataContext="{Binding AppConfig.SynchFileConfig}">
+            </TabItem>
+            <TabItem Name="Synch"
+                     DataContext="{Binding AppConfig.SynchFileConfig}"
+                     Header="文件同步设置">
                 <local_views:SynchOptionView />
             </TabItem>
-            <TabItem Header="个性化界面"
-                     Name="Customize">
+            <TabItem Name="Customize" Header="个性化界面">
                 <local_views:ColorTool />
             </TabItem>
         </TabControl>

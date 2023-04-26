@@ -46,7 +46,10 @@ public partial class App
         containerRegistry.Register<NavigationBar>();
         containerRegistry.RegisterSingleton<ISnackbarMessageQueue>(() => new SnackbarMessageQueue(TimeSpan.FromSeconds(1)));
         containerRegistry.Register<Login>();
-        containerRegistry.RegisterInstance(AppConfiguration.Instance);
+        //if (AppConfiguration.Load() is AppConfiguration tmp)
+        //    containerRegistry.RegisterInstance(tmp);
+        //else 
+            containerRegistry.RegisterSingleton<AppConfiguration>();
 
         // 注册导航
         containerRegistry.RegisterForNavigation<CloudFileView>();

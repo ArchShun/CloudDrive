@@ -12,13 +12,14 @@ using System.Windows.Controls;
 
 namespace CloudDriveUI.ViewModels;
 
-public class PreferencesViewModel : BindableBase
+public class PreferencesViewModel : BindableBase, INavigationAware
 {
     private readonly IEventAggregator aggregator;
 
     private Login userLogin;
     private AppConfiguration appConfig;
     private string? _passwordValidated;
+    private int selectedIndex = 0;
 
     public PreferencesViewModel(Login userLogin, AppConfiguration appConfig, IEventAggregator aggregator)
     {
@@ -28,6 +29,14 @@ public class PreferencesViewModel : BindableBase
         ModifyLocalPathCommand = new(ModifyLocalPath);
     }
     public DelegateCommand ModifyLocalPathCommand { get; set; }
+    public int SelectedIndex
+    {
+        get => selectedIndex;  set
+        {
+            selectedIndex = value;
+            RaisePropertyChanged();
+        }
+    }
     public AppConfiguration AppConfig
     {
         get => appConfig; set
@@ -51,6 +60,25 @@ public class PreferencesViewModel : BindableBase
         }
     }
 
+    public void OnNavigatedTo(NavigationContext navigationContext)
+    {
+        // 从其它页面跳转过来的时候调用
+        if (navigationContext.Parameters.ContainsKey("SelectedIndex") && int.TryParse(navigationContext.Parameters.GetValue<string>("SelectedIndex"), out int idx))
+        {
+            SelectedIndex = idx;
+        }
+    }
+
+    public bool IsNavigationTarget(NavigationContext navigationContext)
+    {
+        return true;
+    }
+
+    public void OnNavigatedFrom(NavigationContext navigationContext)
+    {
+
+    }
+
     public string? PasswordValidated
     {
         get => _passwordValidated;
@@ -61,4 +89,5 @@ public class PreferencesViewModel : BindableBase
             SetProperty(ref _passwordValidated, value);
         }
     }
+
 }

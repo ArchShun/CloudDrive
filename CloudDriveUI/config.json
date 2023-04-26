@@ -1,8 +1,0 @@
-{
-  "SynchFileConfig": {
-    "LocalPath": "Test",
-    "RemotePath": "/apps/test",
-    "AutoRefresh": false,
-    "AutoRefreshSeconds": 60
-  }
-}

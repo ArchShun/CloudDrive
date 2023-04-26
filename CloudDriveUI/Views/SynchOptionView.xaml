@@ -45,8 +45,7 @@
     </UserControl.Resources>
 
     <Grid>
-        <ScrollViewer Grid.Row="1"
-                      VerticalScrollBarVisibility="Hidden">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Hidden">
             <StackPanel Margin="0">
                 <GroupBox Header="同步路径">
                     <Grid HorizontalAlignment="Stretch">
@@ -88,9 +87,18 @@
                         <TextBox x:Name="RomotePath"
                                  Grid.Row="1"
                                  Grid.Column="1"
-                                 materialDesign:HintAssist.HelperText="输入远程路径"
-                                 materialDesign:HintAssist.Hint="Input Remote Directory"
-                                 Text="{Binding RemotePath, Mode=TwoWay}" />
+                                 materialDesign:HintAssist.HelperText="输入远程路径，根路径使用 / "
+                                 materialDesign:HintAssist.Hint="Input Remote Directory">
+                            <TextBox.Text>
+                                <Binding Mode="TwoWay"
+                                         Path="RemotePath"
+                                         UpdateSourceTrigger="PropertyChanged">
+                                    <Binding.ValidationRules>
+                                        <local_vr:NotEmptyValidationRule ValidatesOnTargetUpdated="True" />
+                                    </Binding.ValidationRules>
+                                </Binding>
+                            </TextBox.Text>
+                        </TextBox>
 
                         <Button Grid.Row="0"
                                 Grid.Column="2"
@@ -101,8 +109,7 @@
                 <GroupBox Header="自动同步">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <ToggleButton x:Name="AutoRefresh"
-                                          IsChecked="{Binding AutoRefresh}" />
+                            <ToggleButton x:Name="AutoRefresh" IsChecked="{Binding AutoRefresh}" />
                             <TextBlock Text="自动刷新频率（分钟/次）" />
                         </StackPanel>
                         <Slider x:Name="AutoRefreshSeconds"
@@ -117,8 +124,7 @@
                         <Separator />
                         <!--  定时同步  -->
                         <StackPanel Orientation="Horizontal">
-                            <ToggleButton x:Name="SynchSchedule"
-                                          IsChecked="{Binding UseSchedule}" />
+                            <ToggleButton x:Name="SynchSchedule" IsChecked="{Binding UseSchedule}" />
                             <TextBlock Text="启动定时同步" />
                         </StackPanel>
                         <StackPanel VerticalAlignment="Bottom"

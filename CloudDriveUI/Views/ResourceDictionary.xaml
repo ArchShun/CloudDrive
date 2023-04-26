@@ -28,12 +28,13 @@
         </Style.Setters>
     </Style>
 
-    <Style x:Key="ListBoxItemTransparent"
-           TargetType="ListBoxItem">
+    <Style x:Key="ListBoxItemTransparent" TargetType="ListBoxItem">
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryHueMidBrush}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -61,11 +62,10 @@
     </Style>
 
     <!--  上下文菜单项模板  -->
-    <ControlTemplate x:Key="MenuItemTemplate"
-                     TargetType="MenuItem">
-        <MenuItem Header="{TemplateBinding Header}"
-                  Command="{TemplateBinding Command}"
-                  CommandParameter="{TemplateBinding CommandParameter}">
+    <ControlTemplate x:Key="MenuItemTemplate" TargetType="MenuItem">
+        <MenuItem Command="{TemplateBinding Command}"
+                  CommandParameter="{TemplateBinding CommandParameter}"
+                  Header="{TemplateBinding Header}">
             <MenuItem.Icon>
                 <materialDesign:PackIcon Kind="{TemplateBinding Icon, Converter={StaticResource ObjectToStringConverter}}" />
             </MenuItem.Icon>
@@ -73,17 +73,14 @@
     </ControlTemplate>
 
     <!--  路径列表  -->
-    <Style x:Key="PathsListStyle"
-           TargetType="ListBox">
+    <Style x:Key="PathsListStyle" TargetType="ListBox">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="ItemTemplate">
             <Setter.Value>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                                   Text="&gt; " />
-                        <TextBlock Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
-                                   Text="{Binding}" />
+                        <TextBlock Text="&gt; " />
+                        <TextBlock Text="{Binding}" />
                     </StackPanel>
                 </DataTemplate>
             </Setter.Value>
@@ -102,14 +99,11 @@
         <StackPanel Orientation="Horizontal">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="MouseUp">
-                    <i:InvokeCommandAction Command="{Binding Command}"
-                                           CommandParameter="{Binding}" />
+                    <i:InvokeCommandAction Command="{Binding Command}" CommandParameter="{Binding}" />
                 </i:EventTrigger>
             </i:Interaction.Triggers>
-            <materialDesign:PackIcon Margin="5,0"
-                                     Kind="{Binding Icon}" />
-            <TextBlock Margin="5,0"
-                       Text="{Binding Name}" />
+            <materialDesign:PackIcon Margin="5,0" Kind="{Binding Icon}" />
+            <TextBlock Margin="5,0" Text="{Binding Name}" />
         </StackPanel>
     </DataTemplate>
 

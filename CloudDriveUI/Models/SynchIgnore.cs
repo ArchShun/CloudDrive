@@ -27,10 +27,11 @@ public class SynchIgnore
     public bool Check(PathInfo path)
     {
         string full = path.GetFullPath();
-        return Paths.Any(e => full.StartsWith(e.Trim('/','\\')))
-            || Extensions.Any(full.EndsWith)
-            || Names.Any(full.EndsWith)
-            || Names.Any(e => e == path.GetName());
+        return full.EndsWith(".backup", StringComparison.OrdinalIgnoreCase)
+            || Paths.Any(e => full.StartsWith(e.Trim('/','\\'), StringComparison.OrdinalIgnoreCase))
+            || Extensions.Any(e=>full.EndsWith(e, StringComparison.OrdinalIgnoreCase))
+            || Names.Any(e => full.EndsWith(e, StringComparison.OrdinalIgnoreCase))
+            || Names.Any(e => e.Equals(path.GetName(),StringComparison.OrdinalIgnoreCase));
     }
     /// <summary>
     /// 检查是否被忽略

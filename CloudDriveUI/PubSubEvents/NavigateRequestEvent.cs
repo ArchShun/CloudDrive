@@ -2,6 +2,6 @@
 
 namespace CloudDriveUI.PubSubEvents;
 
-class NavigateRequestEvent:PubSubEvent<string>
+class NavigateRequestEvent:PubSubEvent<NavigateRequestEventArgs>
 {
 }

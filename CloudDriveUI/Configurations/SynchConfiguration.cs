@@ -7,8 +7,7 @@ namespace CloudDriveUI.Configurations;
 
 public class SynchConfiguration : BindableBase
 {
-    private string localPath = string.Empty;
-
+    private string localPath = "";
     public string LocalPath
     {
         get => localPath; set
@@ -17,7 +16,7 @@ public class SynchConfiguration : BindableBase
             RaisePropertyChanged();
         }
     }
-    public string RemotePath { get; set; } = string.Empty;
+    public string RemotePath { get; set; } = "";
     public int AutoRefreshSeconds { get; set; } = 60;
     public bool AutoRefresh { get; set; } = true;
     public SynchIgnore Ignore { get; set; } = new();

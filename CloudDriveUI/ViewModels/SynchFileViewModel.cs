@@ -22,6 +22,7 @@ public class SynchFileViewModel : FileViewBase
     protected ObservableCollection<SynchFileItem> fileItems = new();
     private Node<SynchFileItem>? root;
     private readonly IRegionManager regionManager;
+    private readonly IEventAggregator aggregator;
     private CancellationTokenSource autoSynchCts = new();
     #region 属性
 
@@ -32,9 +33,9 @@ public class SynchFileViewModel : FileViewBase
 
     public SynchConfiguration SynchConfig { get; private set; }
 
-    private PathInfo LocalRootPath => new PathInfo(Path.GetFullPath(SynchConfig.LocalPath)).Lock();
-    private PathInfo RemoteRootPath => new PathInfo(SynchConfig.RemotePath).Lock();
-    private PathInfo RemoteBackupPath => RemoteRootPath.Join(".backup").Lock();
+    private PathInfo? LocalRootPath { get; set; }
+    private PathInfo? RemoteRootPath { get; set; }
+    private PathInfo? RemoteBackupPath { get; set; }
 
     #endregion
 
@@ -49,12 +50,13 @@ public class SynchFileViewModel : FileViewBase
 
     #endregion
 
-    public SynchFileViewModel(ICloudDriveProvider cloudDrive, ILogger<SynchFileViewModel> logger, ISnackbarMessageQueue snackbarMessageQueue, IRegionManager regionManager, IEventAggregator aggregator,AppConfiguration appConfiguration) : base(cloudDrive, logger, snackbarMessageQueue)
+    public SynchFileViewModel(ICloudDriveProvider cloudDrive, ILogger<SynchFileViewModel> logger, ISnackbarMessageQueue snackbarMessageQueue, IRegionManager regionManager, IEventAggregator aggregator, AppConfiguration appConfiguration) : base(cloudDrive, logger, snackbarMessageQueue)
     {
         this.regionManager = regionManager;
+        this.aggregator = aggregator;
         OperationItems = new List<GeneralListItem>()
         {
-            new GeneralListItem() { Name = "配置同步", Icon = "CogSyncOutline",Command = new((obj) => aggregator.GetEvent<NavigateRequestEvent>().Publish("PreferencesView")) },
+            new GeneralListItem() { Name = "配置同步", Icon = "CogSyncOutline",Command = new((obj) =>aggregator.GetEvent<NavigateRequestEvent>().Publish(new NavigateRequestEventArgs("PreferencesView", new KeyValuePair<string, object>("SelectedIndex", 1))) ) },
             new GeneralListItem() { Name = "刷新列表", Icon = "FolderSyncOutline" ,Command = new DelegateCommand<object?>( (obj)=> RefreshFileItems()) },
             new GeneralListItem() { Name = "全部同步", Icon = "FolderArrowUpDownOutline" ,Command = new ((obj)=> SynchronizAll()) }
         };
@@ -66,13 +68,19 @@ public class SynchFileViewModel : FileViewBase
         SynchronizAllCommand = new(SynchronizAll);
         RefreshCommand = new(RefreshFileItems);
 
-        _ = aggregator.GetEvent<SynchConfigChangedEvent>().Subscribe(Init);
+        _ = aggregator.GetEvent<AppConfigurationChangedEvent>().Subscribe(Init);
         SynchConfig = appConfiguration.SynchFileConfig;
-
         Init();
     }
     private void Init()
     {
+        // 如果没有配置同步地址，跳转到设置页面
+        if (!string.IsNullOrEmpty(SynchConfig.LocalPath) && !string.IsNullOrEmpty(SynchConfig.RemotePath))
+        {
+            LocalRootPath = new PathInfo(Path.GetFullPath(SynchConfig.LocalPath)).Lock();
+            RemoteRootPath = new PathInfo(SynchConfig.RemotePath).Lock();
+        }
+        else snackbar.Enqueue("还没有配置同步文件夹地址");
         if (!autoSynchCts.IsCancellationRequested)
         {
             autoSynchCts.Cancel();
@@ -141,6 +149,7 @@ public class SynchFileViewModel : FileViewBase
 
     private async void CreateDir()
     {
+        if (LocalRootPath == null || RemoteRootPath == null) return;
         var dict = new Dictionary<string, string?>() { { "folder_name", null } };
         if (await DialogHostExtentions.ShowListDialogAsync(dict) && !string.IsNullOrEmpty(dict["folder_name"]))
         {
@@ -254,6 +263,7 @@ public class SynchFileViewModel : FileViewBase
     /// <returns></returns>
     private async Task SynchronizNodeAsync(Node<SynchFileItem> node)
     {
+        if (LocalRootPath == null || RemoteRootPath == null || RemoteBackupPath == null) return;
         Stack<Node<SynchFileItem>> stack = new Stack<Node<SynchFileItem>>();
         stack.Push(node);
         while (stack.Count > 0)
@@ -275,7 +285,7 @@ public class SynchFileViewModel : FileViewBase
             {
                 PathInfo remoteBackupPath = RemoteBackupPath.Join(itm.RemotePath!.GetRelative(RemoteRootPath).GetFullPath() + DateTime.Now.ToLongDateString());
                 string localPath = LocalRootPath.Join(itm.LocalPath!.GetRelative(LocalRootPath)).GetFullPath();
-                ResponseMessage response = new(false) ;
+                ResponseMessage response = new(false);
                 try
                 {
                     response = await cloudDrive.MoveAsync(itm.RemotePath, remoteBackupPath); //移动备份
@@ -348,10 +358,12 @@ public class SynchFileViewModel : FileViewBase
     /// <param name="reload">重载 root</param>
     protected async void RefreshFileItems(bool reload)
     {
+        DialogHostExtentions.ShowCircleProgressBar();
+        if (LocalRootPath == null || RemoteRootPath == null) return;
         if (root == null || reload)
         {
             var remoteNode = await GetRemoteFileNodeAsync(RemoteRootPath, true);
-            var localNode = FileUtils.GetLocalFileNode((string)LocalRootPath, true);
+            var localNode = FileUtils.GetLocalFileNode(LocalRootPath.GetFullPath(), true);
             root = SynchFileItem.CreateItemNode(localNode, remoteNode);
             var ignore = SynchConfig.Ignore;
             SynchFileItem.RefreshState(root, ignore);
@@ -360,6 +372,7 @@ public class SynchFileViewModel : FileViewBase
         var res = root?.GetNode((string)CurPath);
         if (res != null)
             FileItems = new ObservableCollection<SynchFileItem>(res.Children.Where(n => n.Value != null).Select(n => n.Value!).OrderByDescending(n => n.IsDir));
+        DialogHostExtentions.CloseCircleProgressBar();
     }
     protected override void RefreshFileItems()
     {
@@ -389,16 +402,6 @@ public class SynchFileViewModel : FileViewBase
             return pathNode;
         }
         return remote_root;
-    }
-
-    /// <summary>
-    /// 配置同步路径
-    /// </summary>
-    private void SetAsyncConfig()
-    {
-        NavigationParameters keys = new NavigationParameters();
-        keys.Add("title", "配置中心");
-        regionManager.Regions["ContentRegion"].RequestNavigate("PreferencesView", keys);
     }
 
 

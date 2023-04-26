@@ -1,4 +1,7 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using CloudDriveUI.PubSubEvents;
+using MaterialDesignThemes.Wpf;
+using Microsoft.Extensions.Configuration;
+using Prism.Events;
 using System.Threading.Tasks;
 
 namespace CloudDriveUI.Configurations;
@@ -7,23 +10,38 @@ public class AppConfiguration : BindableBase
 {
     private static readonly string _path = "config.json";
     private static string _snapshot = "";
-    private static AppConfiguration? _instance = null;
+    private readonly IEventAggregator _aggregator;
     private SynchConfiguration synchFileConfig = new SynchConfiguration();
     private ThemeConfiguration appTheme = new();
 
-    public AppConfiguration() { }
+    public AppConfiguration(IEventAggregator _aggregator)
+    {
+        this._aggregator = _aggregator;
+        if (File.Exists(_path))
+        {
+            ConfigurationBuilder builder = new ConfigurationBuilder();
+            builder.AddJsonFile("config.json", true, true);
+            IConfigurationRoot root = builder.Build();
+            SynchFileConfig = root.GetSection("SynchFileConfig").Get<SynchConfiguration>() ?? new();
+            AppTheme = root.GetSection("AppTheme").Get<ThemeConfiguration>() ?? new();
+        }
+        _snapshot = JsonSerializer.Serialize(this);
+    }
+
     public SynchConfiguration SynchFileConfig
     {
-        get => synchFileConfig; set
+        get => synchFileConfig;
+        set
         {
             synchFileConfig = value;
             RaisePropertyChanged();
         }
     }
-
     public ThemeConfiguration AppTheme
     {
-        get => appTheme; set
+        get => appTheme;
+
+        set
         {
             appTheme = value;
             RaisePropertyChanged();
@@ -35,23 +53,8 @@ public class AppConfiguration : BindableBase
         {
             _snapshot = JsonSerializer.Serialize(this);
             File.WriteAllTextAsync(_path, _snapshot);
+            _aggregator.GetEvent<AppConfigurationChangedEvent>().Publish();
         }
     }
     public bool HasChanged() => JsonSerializer.Serialize(this) != _snapshot;
-
-    public static AppConfiguration Instance { private set; get; } = _instance ?? Load();
-
-    private static AppConfiguration Load()
-    {
-        FileInfo file = new(_path);
-        AppConfiguration? tmp = null;
-        if (file.Exists)
-        {
-            using var stream = file.OpenRead();
-            tmp = JsonSerializer.Deserialize<AppConfiguration>(stream);
-        }
-        var ret = tmp ?? new AppConfiguration();
-        _snapshot = JsonSerializer.Serialize(ret);
-        return ret;
-    }
 }

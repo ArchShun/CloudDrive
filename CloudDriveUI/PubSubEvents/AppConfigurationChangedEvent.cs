@@ -2,6 +2,6 @@
 
 namespace CloudDriveUI.PubSubEvents;
 
-public class SynchConfigChangedEvent:PubSubEvent
+public class AppConfigurationChangedEvent:PubSubEvent
 {
 }

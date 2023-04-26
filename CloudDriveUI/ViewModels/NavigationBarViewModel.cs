@@ -18,14 +18,14 @@ public class NavigationBarViewModel : BindableBase
     public NavigationBarViewModel(IRegionManager regionManager, IEventAggregator aggregator)
     {
         this.regionManager = regionManager;
-        NavigateCommand = new(Navigate);
-        _ = aggregator.GetEvent<NavigateRequestEvent>().Subscribe(str =>
+        NavigateCommand = new(obj => Navigate(obj));
+        _ = aggregator.GetEvent<NavigateRequestEvent>().Subscribe(args =>
         {
-            var i = Items.FindIndex(e => e.Name == str);
+            var i = Items.FindIndex(e => e.Name == args.Name);
             if (i > -1)
             {
-                Navigate(Items[i]);
-                SelectedIndex=i;
+                Navigate(Items[i], args.Params);
+                SelectedIndex = i;
             }
         });
 
@@ -41,7 +41,7 @@ public class NavigationBarViewModel : BindableBase
     public DelegateCommand<object?> NavigateCommand { get; }
     public int SelectedIndex { get => selectedIndex; set { selectedIndex = value; RaisePropertyChanged(); } }
 
-    void Navigate(object? obj)
+    void Navigate(object? obj, List<KeyValuePair<string, object>>? pairs = null)
     {
         if (obj is GeneralListItem itm)
         {
@@ -49,6 +49,9 @@ public class NavigationBarViewModel : BindableBase
             {
                 { "title", itm.Info }
             };
+            if (pairs != null)
+                foreach (var kv in pairs)
+                    keys.Add(kv.Key, kv.Value);
             regionManager.Regions["ContentRegion"].RequestNavigate(itm.Name, keys);
         }
     }
