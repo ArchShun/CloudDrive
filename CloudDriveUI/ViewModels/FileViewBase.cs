@@ -19,11 +19,11 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// <summary>
     /// 文件操作控件
     /// </summary>
-    public List<OperationItem> OperationItems { get; init; } = new List<OperationItem>();
+    public List<GeneralListItem> OperationItems { get; init; } = new List<GeneralListItem>();
     /// <summary>
     /// 上下文菜单
     /// </summary>
-    public List<OperationItem> ContextMenuItems { get; init; } = new List<OperationItem>();
+    public List<GeneralListItem> ContextMenuItems { get; init; } = new List<GeneralListItem>();
 
     public FileViewBase(ICloudDriveProvider cloudDrive, ILogger logger, ISnackbarMessageQueue snackbarMessageQueue)
     {
@@ -62,7 +62,7 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// </summary>
     protected abstract void RefreshFileItems();
 
-    public void OnNavigatedTo(NavigationContext navigationContext)
+    public virtual void OnNavigatedTo(NavigationContext navigationContext)
     {
         // 从其它页面跳转过来的时候调用
         if (navigationContext.Parameters.ContainsKey("title"))
@@ -71,17 +71,17 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
         }
     }
 
-    public bool IsNavigationTarget(NavigationContext navigationContext)
+    public virtual bool IsNavigationTarget(NavigationContext navigationContext)
     {
         return true;
     }
 
-    public void OnNavigatedFrom(NavigationContext navigationContext)
+    public virtual void OnNavigatedFrom(NavigationContext navigationContext)
     {
         //throw new NotImplementedException();
     }
 
-    public void ConfirmNavigationRequest(NavigationContext navigationContext, Action<bool> continuationCallback)
+    public virtual void ConfirmNavigationRequest(NavigationContext navigationContext, Action<bool> continuationCallback)
     {
         continuationCallback(navigationContext.Parameters.ContainsKey("title"));
     }
@@ -104,11 +104,11 @@ public abstract class FileViewBase : BindableBase, IConfirmNavigationRequest
     /// <param name="itm">打开的列表项</param>
     protected void OpenDirAsync(FileItemBase itm)
     {
-        if (!itm.IsDir) return;
+        if (!itm?.IsDir??false) return;
         var tmp = CurPath.Duplicate();
         try
         {
-            CurPath.Join(itm.Name);
+            CurPath.Join(itm!.Name,false);
             RaisePropertyChanged(nameof(CurPath));
             RefreshFileItems();
         }

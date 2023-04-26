@@ -9,7 +9,9 @@
     <converter:SyncStateBadgeColorConverter x:Key="SyncStateBadgeColorConverter" />
     <converter:DataTimeConverter x:Key="DataTimeConverter" />
     <converter:PathInfoConverter x:Key="PathInfoConverter" />
-
+    <converter:ObjectToStringEqualityToVisibilityConverter x:Key="ObjectToStringEqualityToVisibilityConverter" />
+    <converter:WeekDaysToDateTimeConverter x:Key="WeekDaysToDateTimeConverter" />
+    <converter:StringToListConverter x:Key="StringToListConverter" />
     <converter:ObjectToStringConverter x:Key="ObjectToStringConverter" />
 
     <Style x:Key="FileListViewStyle"
@@ -61,16 +63,55 @@
     <!--  上下文菜单项模板  -->
     <ControlTemplate x:Key="MenuItemTemplate"
                      TargetType="MenuItem">
-        <MenuItem Command="{TemplateBinding Command}"
-                  Header="{TemplateBinding Header}">
+        <MenuItem Header="{TemplateBinding Header}"
+                  Command="{TemplateBinding Command}"
+                  CommandParameter="{TemplateBinding CommandParameter}">
             <MenuItem.Icon>
                 <materialDesign:PackIcon Kind="{TemplateBinding Icon, Converter={StaticResource ObjectToStringConverter}}" />
             </MenuItem.Icon>
         </MenuItem>
     </ControlTemplate>
 
+    <!--  路径列表  -->
+    <Style x:Key="PathsListStyle"
+           TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                   Text="&gt; " />
+                        <TextBlock Style="{StaticResource MaterialDesignSubtitle1TextBlock}"
+                                   Text="{Binding}" />
+                    </StackPanel>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
-
+    <!--  通用列表项样式  -->
+    <DataTemplate x:Key="GeneralListItemsStyle">
+        <StackPanel Orientation="Horizontal">
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="MouseUp">
+                    <i:InvokeCommandAction Command="{Binding Command}"
+                                           CommandParameter="{Binding}" />
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+            <materialDesign:PackIcon Margin="5,0"
+                                     Kind="{Binding Icon}" />
+            <TextBlock Margin="5,0"
+                       Text="{Binding Name}" />
+        </StackPanel>
+    </DataTemplate>
 
 
 

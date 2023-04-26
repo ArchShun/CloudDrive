@@ -28,11 +28,8 @@ public class CloudFileViewModel : FileViewBase
     public DelegateCommand<object?> RefreshCommand { get; private set; }
     #endregion
 
-
-
     public CloudFileViewModel(ICloudDriveProvider cloudDrive, ILogger<CloudFileViewModel> logger, ISnackbarMessageQueue snackbarMessageQueue) : base(cloudDrive, logger, snackbarMessageQueue)
     {
-
         DownloadCommand = new(DownloadFileItem);
         RenameCommand = new(RenameFileItem);
         CreateDirCommand = new(CreateDirectory);
@@ -40,12 +37,12 @@ public class CloudFileViewModel : FileViewBase
         UploadDirCommand = new(UploadDirAsync);
         RefreshCommand = new(obj => RefreshFileItems());
         DeleteCommand = new(DeleteItem);
-        OperationItems = new List<OperationItem>()
+        OperationItems = new List<GeneralListItem>()
         {
-            new OperationItem() { Name = "上传文件", Icon = "FileUploadOutline",Command=new ( obj=>UploadFileAsync())},
-            new OperationItem() { Name = "上传文件夹", Icon = "FolderUploadOutline" ,Command=new DelegateCommand<object?>(obj=>UploadDirAsync())},
-            new OperationItem() { Name = "新建文件夹", Icon = "FolderPlusOutline" ,Command=new DelegateCommand<object?>(obj=>CreateDirectory())},
-            new OperationItem() { Name = "刷新列表", Icon = "CloudRefreshOutline" ,Command = new DelegateCommand<object?>(obj=>RefreshFileItems())},
+            new GeneralListItem() { Name = "上传文件", Icon = "FileUploadOutline",Command=new ( obj=>UploadFileAsync())},
+            new GeneralListItem() { Name = "上传文件夹", Icon = "FolderUploadOutline" ,Command=new DelegateCommand<object?>(obj=>UploadDirAsync())},
+            new GeneralListItem() { Name = "新建文件夹", Icon = "FolderPlusOutline" ,Command=new DelegateCommand<object?>(obj=>CreateDirectory())},
+            new GeneralListItem() { Name = "刷新列表", Icon = "CloudRefreshOutline" ,Command = new DelegateCommand<object?>(obj=>RefreshFileItems())},
          };
         RefreshFileItems();
     }
@@ -60,9 +57,9 @@ public class CloudFileViewModel : FileViewBase
         DialogHostExtentions.ShowCircleProgressBar();
         var path = CurPath.Duplicate().Join(itm.Name);
         var res = itm.IsDir ? await cloudDrive.DeleteDirAsync(path) : await cloudDrive.DeleteAsync(path);
+        if (res.IsSuccess) RefreshFileItems();
         DialogHostExtentions.CloseCircleProgressBar();
-        if (res) RefreshFileItems();
-        snackbar.Enqueue(res ? "删除成功" : "删除失败", null, null, null, false, true, TimeSpan.FromSeconds(2));
+        snackbar.Enqueue(res.IsSuccess ? "删除成功" : "删除失败");
     }
     /// <summary>
     /// 重命名
@@ -72,14 +69,19 @@ public class CloudFileViewModel : FileViewBase
     {
         if (obj is not CloudFileItem itm) return;
         Dictionary<string, string?> dict = new() { { "name", itm.Name } };
-        if (await DialogHostExtentions.ShowListDialogAsync(dict))
+        if (!await DialogHostExtentions.ShowListDialogAsync(dict)) return;
+        string name = dict["name"]!;
+        if (FileItems.Any(e => e.Name == name))
         {
-            DialogHostExtentions.ShowCircleProgressBar();
-            var res = await cloudDrive.RenameAsync(CurPath.Duplicate().Join(itm.Name), dict["name"]!);
-            RefreshFileItems();
-            DialogHostExtentions.CloseCircleProgressBar();
-            snackbar.Enqueue(res ? "修改成功" : "修改失败", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            snackbar.Enqueue($"{name} 已存在");
+            return;
         }
+        DialogHostExtentions.ShowCircleProgressBar();
+        var res = await cloudDrive.RenameAsync(CurPath.Duplicate().Join(itm.Name), name);
+        RefreshFileItems();
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        DialogHostExtentions.CloseCircleProgressBar();
+        snackbar.Enqueue(res.IsSuccess ? "修改成功" : "修改失败");
     }
 
     private async void UploadDirAsync()
@@ -91,9 +93,10 @@ public class CloudFileViewModel : FileViewBase
         foreach (var select_dir in dialog.SelectedPaths)
         {
             DialogHostExtentions.ShowCircleProgressBar();
-            IEnumerable<CloudFileInfo> res = await cloudDrive.UploadDirAsync((PathInfo)select_dir, CurPath.Duplicate());
+            var res = await cloudDrive.UploadDirAsync((PathInfo)select_dir, CurPath.Duplicate());
             DialogHostExtentions.CloseCircleProgressBar();
-            snackbar.Enqueue(res.Any() ? $"{select_dir}中的{res.Count()}个文件上传成功" : "上传失败", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            foreach (var item in res)
+                snackbar.Enqueue(item.IsSuccess ? "上传成功" : $"上传失败{Environment.NewLine}errMsg:{item.ErrMessage}");
         }
         RefreshFileItems();
     }
@@ -128,45 +131,17 @@ public class CloudFileViewModel : FileViewBase
     /// <exception cref="NotImplementedException"></exception>
     private async void CreateDirectory()
     {
-
         var dict = new Dictionary<string, string?>() { { "folder_name", null } };
         if (await DialogHostExtentions.ShowListDialogAsync(dict) && !string.IsNullOrEmpty(dict["folder_name"]))
         {
             var path = CurPath.Duplicate().Join(dict["folder_name"]!);
             DialogHostExtentions.ShowCircleProgressBar();
-            var res = await cloudDrive.CreateDirectoryAsync(path);
+            ResponseMessage res = await cloudDrive.CreateDirectoryAsync(path);
             DialogHostExtentions.CloseCircleProgressBar();
-            if (res != null) FileItems.Add(new CloudFileItem(res));
-            snackbar.Enqueue(res != null ? "文件夹创建成功" : "文件夹创建失败", null, null, null, false, true, TimeSpan.FromSeconds(2));
+            snackbar.Enqueue(res.IsSuccess ? "文件夹创建成功" : "文件夹创建失败");
+            if (res.IsSuccess) RefreshFileItems();
         }
     }
-
-    /// <summary>
-    /// 下载文件夹
-    /// </summary>
-    /// <param name="remotePath"></param>
-    /// <param name="localPath"></param>
-    /// <returns></returns>
-    private async Task<List<string>> DownloadDirectoryAsync(PathInfo remotePath, PathInfo localPath)
-    {
-        var errs = new List<string>();
-        localPath = (PathInfo)Path.GetFullPath((string)localPath);
-        var lst = await cloudDrive.GetFileListAllAsync(remotePath);
-        if (lst != null) foreach (var info in lst)
-            {
-                var relative = info.Path.GetRelative(remotePath); // 获取相对路径
-                var local = localPath.Duplicate().Join((string)relative); // 拼接本地路径
-                if (info.IsDir)
-                    Directory.CreateDirectory((string)local);
-                else
-                {
-                    var res = await cloudDrive.DownloadAsync(info.Path, local);
-                    if (!res) errs.Add($"{info.Path}");
-                }
-            }
-        return errs;
-    }
-
 
     /// <summary>
     /// 下载文件
@@ -184,25 +159,23 @@ public class CloudFileViewModel : FileViewBase
         };
         if (dialog.ShowDialog() ?? false)
         {
-            var err = new List<string>();
             PathInfo localPath = (PathInfo)FileUtils.LocalPathDupPolicy(Path.Join(dialog.SelectedPath, itm.Name));
             PathInfo remotePath = CurPath.Join(itm.Name);
             DialogHostExtentions.ShowCircleProgressBar();
             if (!itm.IsDir)
             {
                 var res = await cloudDrive.DownloadAsync(remotePath, localPath);
-                if (!res) err.Add((string)remotePath);
+                snackbar.Enqueue(res.IsSuccess ? "下载成功" : $"下载失败{Environment.NewLine}errMsg:{res.ErrMessage}");
             }
             else
             {
-                var res = await DownloadDirectoryAsync(remotePath, localPath);
-                err.AddRange(res);
+                var res = await cloudDrive.DownloadDirAsync(remotePath, localPath);
+                foreach (var msg in res)
+                    snackbar.Enqueue(msg.IsSuccess ? "下载成功" : $"下载失败{Environment.NewLine}errMsg:{msg.ErrMessage}");
             }
             DialogHostExtentions.CloseCircleProgressBar();
-            snackbar.Enqueue((err.Count > 0) ? string.Join(Environment.NewLine, err) : "下载成功", null, null, null, false, true, TimeSpan.FromSeconds(2));
         }
     }
-
 
     protected override async void RefreshFileItems()
     {
@@ -212,6 +185,7 @@ public class CloudFileViewModel : FileViewBase
         FileItems = new ObservableCollection<CloudFileItem>(items);
         DialogHostExtentions.CloseCircleProgressBar();
     }
+
 }
 
 

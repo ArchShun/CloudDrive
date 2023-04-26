@@ -23,6 +23,8 @@ namespace CloudDriveUI.Views
         public MessageDialog()
         {
             InitializeComponent();
+            Tb.Text = "Message";
+            
         }
     }
 }

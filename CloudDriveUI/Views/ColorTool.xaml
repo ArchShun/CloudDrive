@@ -1,0 +1,284 @@
+﻿<UserControl x:Class="CloudDriveUI.Views.ColorTool"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:common="clr-namespace:CloudDrive.Utils"
+             xmlns:converters="clr-namespace:CloudDriveUI.Converters"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:domain="clr-namespace:CloudDriveUI.ViewModels"
+             xmlns:local="clr-namespace:CloudDriveUI"
+             xmlns:local_conf="clr-namespace:CloudDriveUI.Configurations"
+             xmlns:local_views="clr-namespace:CloudDriveUI.Views"
+             xmlns:local_vm="clr-namespace:CloudDriveUI.ViewModels"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:materialDesignColors="clr-namespace:MaterialDesignColors;assembly=MaterialDesignColors"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:prism="http://prismlibrary.com/"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             d:DesignHeight="600"
+             d:DesignWidth="600"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.RadioButton.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Button.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Slider.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.TextBlock.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:ColorToBrushConverter x:Key="ColorToBrushConverter" />
+            <converters:BrushToHexConverter x:Key="BrushToHexConverter" />
+            <converters:MultiValueEqualityConverter x:Key="MultiValueEqualityConverter" />
+
+            <Style BasedOn="{StaticResource MaterialDesignRaisedButton}"
+                   TargetType="Button">
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="materialDesign:ElevationAssist.Elevation" Value="Dp0" />
+            </Style>
+
+            <Style x:Key="HexLabelTextBlock"
+                   BasedOn="{StaticResource MaterialDesignBody2TextBlock}"
+                   TargetType="TextBlock">
+                <Setter Property="Margin" Value="8" />
+            </Style>
+
+            <Style TargetType="Border">
+                <Setter Property="BorderBrush" Value="LightGray" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <DataTemplate x:Key="SwatchColorTemplate"
+                          DataType="{x:Type Color}">
+                <Button Width="28"
+                        Height="28"
+                        Background="{Binding Converter={StaticResource ColorToBrushConverter}}"
+                        Command="{Binding DataContext.ChangeHueCommand, RelativeSource={RelativeSource AncestorType=local_views:ColorTool}}"
+                        CommandParameter="{Binding}">
+                    <Button.Style>
+                        <Style BasedOn="{StaticResource MaterialDesignRaisedButton}"
+                               TargetType="Button">
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Margin" Value="1,1,0,0" />
+                            <Setter Property="Tag" Value="0" />
+                            <Setter Property="local:ButtonAssist.UniformCornerRadius" Value="0" />
+                            <Setter Property="materialDesign:ElevationAssist.Elevation" Value="Dp0" />
+                            <Setter Property="materialDesign:RippleAssist.IsDisabled" Value="True" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                                 To="8"
+                                                                 Duration="0:0:0.18" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                                 From="8"
+                                                                 Duration="0:0:0.18" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+
+                                <DataTrigger Value="True">
+                                    <DataTrigger.Binding>
+                                        <MultiBinding Converter="{StaticResource MultiValueEqualityConverter}">
+                                            <Binding Mode="OneWay"
+                                                     Path="DataContext.SelectedColor"
+                                                     RelativeSource="{RelativeSource AncestorType=local_views:ColorTool}" />
+                                            <Binding Mode="OneWay" />
+                                        </MultiBinding>
+                                    </DataTrigger.Binding>
+
+                                    <DataTrigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                                 To="20"
+                                                                 Duration="0:0:0.18" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.EnterActions>
+
+                                    <DataTrigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                                 From="20"
+                                                                 Duration="0:0:0.18" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </DataTrigger.ExitActions>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </DataTemplate>
+
+            <Style x:Key="ColorBtn"
+                   BasedOn="{StaticResource MaterialDesignRaisedButton}"
+                   TargetType="Button">
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Tag" Value="0" />
+                <Setter Property="Margin" Value="0,1" />
+                <Setter Property="Height" Value="56" />
+                <Setter Property="MaxWidth" Value="180" />
+                <Setter Property="local:ButtonAssist.UniformCornerRadius" Value="0" />
+                <Setter Property="materialDesign:ElevationAssist.Elevation" Value="Dp0" />
+                <Setter Property="materialDesign:RippleAssist.IsDisabled" Value="True" />
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Trigger.EnterActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                     To="8"
+                                                     Duration="0:0:0.18" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </Trigger.EnterActions>
+
+                        <Trigger.ExitActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                     From="8"
+                                                     Duration="0:0:0.18" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </Trigger.ExitActions>
+                    </Trigger>
+                    <DataTrigger Value="True">
+                        <DataTrigger.Binding>
+                            <MultiBinding Converter="{StaticResource MultiValueEqualityConverter}">
+                                <Binding Mode="OneWay"
+                                         Path="DataContext.ActiveScheme"
+                                         RelativeSource="{RelativeSource AncestorType=local_views:ColorTool}" />
+                                <Binding Mode="OneWay" />
+                            </MultiBinding>
+                        </DataTrigger.Binding>
+                        <DataTrigger.EnterActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                     To="16"
+                                                     Duration="0:0:0.18" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.EnterActions>
+
+                        <DataTrigger.ExitActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="(local:ButtonAssist.UniformCornerRadius)"
+                                                     From="16"
+                                                     Duration="0:0:0.18" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.ExitActions>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <!--  颜色选择区域  -->
+        <StackPanel Orientation="Horizontal">
+            <StackPanel.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Margin" Value="1,1,0,0" />
+                    <Setter Property="TextAlignment" Value="Center" />
+                    <Setter Property="Width" Value="28" />
+                </Style>
+            </StackPanel.Resources>
+
+            <Rectangle Width="80" />
+            <TextBlock Text="50" />
+            <TextBlock Text="100" />
+            <TextBlock Text="200" />
+            <TextBlock Text="300" />
+            <TextBlock Text="400" />
+            <TextBlock Text="500" />
+            <TextBlock Text="600" />
+            <TextBlock Text="700" />
+            <TextBlock Text="800" />
+            <TextBlock Text="900" />
+            <TextBlock Text="A100" />
+            <TextBlock Text="A200" />
+            <TextBlock Text="A400" />
+            <TextBlock Text="A700" />
+        </StackPanel>
+        <ItemsControl Grid.Row="1"
+                      ItemsSource="{x:Static materialDesignColors:SwatchHelper.Swatches}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type materialDesignColors:ISwatch}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Width="80"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding Name, Mode=OneTime}" />
+                        <ItemsControl ItemTemplate="{StaticResource SwatchColorTemplate}"
+                                      ItemsSource="{Binding Hues, Mode=OneTime}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!--  设置选择区域  -->
+        <StackPanel Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="18,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Top">
+            <Button Background="{DynamicResource PrimaryHueMidBrush}"
+                    Command="{Binding DataContext.ChangeActiveSchemeCommand, RelativeSource={RelativeSource AncestorType=local_views:ColorTool}}"
+                    CommandParameter="{Binding}"
+                    Content="{x:Static local_conf:ColorScheme.Primary}"
+                    DataContext="{x:Static local_conf:ColorScheme.Primary}"
+                    Foreground="{DynamicResource PrimaryHueMidForegroundBrush}"
+                    Style="{StaticResource ColorBtn}" />
+            <Button Background="{DynamicResource SecondaryHueMidBrush}"
+                    Command="{Binding DataContext.ChangeActiveSchemeCommand, RelativeSource={RelativeSource AncestorType=local_views:ColorTool}}"
+                    CommandParameter="{Binding}"
+                    Content="{x:Static local_conf:ColorScheme.Secondary}"
+                    DataContext="{x:Static local_conf:ColorScheme.Secondary}"
+                    Foreground="{DynamicResource SecondaryHueMidForegroundBrush}"
+                    Style="{StaticResource ColorBtn}" />
+            <Button Background="{DynamicResource PrimaryHueMidBrush}"
+                    Command="{Binding DataContext.ChangeActiveSchemeCommand, RelativeSource={RelativeSource AncestorType=local_views:ColorTool}}"
+                    CommandParameter="{Binding}"
+                    Content="{x:Static local_conf:ColorScheme.PrimaryForeground}"
+                    DataContext="{x:Static local_conf:ColorScheme.PrimaryForeground}"
+                    Foreground="{DynamicResource PrimaryHueMidForegroundBrush}"
+                    Style="{StaticResource ColorBtn}" />
+            <Button Background="{DynamicResource SecondaryHueMidBrush}"
+                    Command="{Binding DataContext.ChangeActiveSchemeCommand, RelativeSource={RelativeSource AncestorType=local_views:ColorTool}}"
+                    CommandParameter="{Binding}"
+                    Content="{x:Static local_conf:ColorScheme.SecondaryForeground}"
+                    DataContext="{x:Static local_conf:ColorScheme.SecondaryForeground}"
+                    Foreground="{DynamicResource SecondaryHueMidForegroundBrush}"
+                    Style="{StaticResource ColorBtn}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

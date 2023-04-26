@@ -9,10 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BDCloudDrive", "BDCloudDriv
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudDriveUI", "CloudDriveUI\CloudDriveUI.csproj", "{B50C7861-C8F1-423D-80F7-F414FF5A141C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudDriveTest", "CloudDriveTest\CloudDriveTest.csproj", "{61083B02-F1DC-4936-B33D-E523ECB032D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudDriveTest", "CloudDriveTest\CloudDriveTest.csproj", "{61083B02-F1DC-4936-B33D-E523ECB032D6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{57B49B68-36D7-4755-90A2-6966AA32156D} = {57B49B68-36D7-4755-90A2-6966AA32156D}
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MockCloudDrive", "MockCloudDrive\MockCloudDrive.csproj", "{73F49319-BE98-410D-AF10-B9AE119D890B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +38,10 @@ Global
 		{61083B02-F1DC-4936-B33D-E523ECB032D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{61083B02-F1DC-4936-B33D-E523ECB032D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{61083B02-F1DC-4936-B33D-E523ECB032D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73F49319-BE98-410D-AF10-B9AE119D890B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73F49319-BE98-410D-AF10-B9AE119D890B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73F49319-BE98-410D-AF10-B9AE119D890B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73F49319-BE98-410D-AF10-B9AE119D890B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

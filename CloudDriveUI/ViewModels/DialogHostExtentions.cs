@@ -1,4 +1,5 @@
 ﻿using CloudDriveUI.Views;
+using ImTools;
 using MaterialDesignThemes.Wpf;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -22,29 +23,14 @@ public static class DialogHostExtentions
     /// </summary>
     /// <param name="keyValuePairs">字典</param>
     /// <returns>是否提交</returns>
-    public static async Task<bool> ShowListDialogAsync(Dictionary<string, string?> keyValuePairs)
+    public static async Task<bool> ShowListDialogAsync(Dictionary<string, string?> keyValuePairs, Func<ListDialogItem, ValidationResult>? validation = null)
     {
         var dialog = new ListDialog();
-        var vm = dialog.DataContext as ListDialogViewModel;
-        if (vm == null)
-        {
-            vm = new ListDialogViewModel();
-            dialog.DataContext = vm;
-        }
-        vm.ListItems.AddRange(keyValuePairs.Select(kv => new KeyValueItem<string, string?>(kv.Key, kv.Value)));
-
+        var vm = new ListDialogViewModel();
+        dialog.DataContext = vm;
+        vm.ListItems.AddRange(keyValuePairs.Select(e => new ListDialogItem(e.Key, e.Value)));
         var flag = (bool)(await DialogHost.Show(dialog, "RootDialog") ?? false);
-
-        if (flag)
-        {
-            foreach (var kv in vm.ListItems)
-            {
-                if (keyValuePairs.ContainsKey(kv.Key))
-                {
-                    keyValuePairs[kv.Key] = kv.Value;
-                }
-            }
-        }
+        if (flag) vm.ListItems.Where(e => keyValuePairs.ContainsKey(e.Key)).ToList().ForEach(kv => keyValuePairs[kv.Key] = kv.Value);
         return flag;
     }
 
@@ -60,11 +46,7 @@ public static class DialogHostExtentions
         return ShowListDialogAsync(pairs);
     }
 
-
-    /// <summary>
-    /// 环形进度条
-    /// </summary>
-    private static readonly CircleProgressBar circleProgressBar = new CircleProgressBar();
+    private static readonly CircleProgressBar circleProgressBar = new();
     public static void ShowCircleProgressBar()
     {
         DialogHost.Show(circleProgressBar, "ProgressBar");
@@ -72,8 +54,15 @@ public static class DialogHostExtentions
 
     public static void CloseCircleProgressBar()
     {
-        if (DialogHost.IsDialogOpen("ProgressBar"))
-            DialogHost.Close("ProgressBar");
+        try
+        {
+            if (DialogHost.IsDialogOpen("ProgressBar"))
+                DialogHost.Close("ProgressBar");
+        }
+        catch
+        {
+
+        }
     }
 
     public static void SelectFileDialog()

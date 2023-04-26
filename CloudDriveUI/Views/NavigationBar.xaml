@@ -1,13 +1,23 @@
-﻿<UserControl
-    x:Class="CloudDriveUI.Views.NavigationBar"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:prism="http://prismlibrary.com/"
-    prism:ViewModelLocator.AutoWireViewModel="True"
-    mc:Ignorable="d">
+﻿<UserControl x:Class="CloudDriveUI.Views.NavigationBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:prism="http://prismlibrary.com/"
+             prism:ViewModelLocator.AutoWireViewModel="True"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <DataTemplate x:Key="GeneralListTemplate">
+            <StackPanel Orientation="Horizontal">
+                <Border Visibility="{Binding Icon, Converter={StaticResource NullableToVisibilityConverter}}">
+                    <materialDesign:PackIcon Kind="{Binding Icon}" />
+                </Border>
+                <TextBlock Text="{Binding Info}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -15,21 +25,16 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
         <StackPanel>
-            <ListBox
-                x:Name="ItemsList"
-                MinWidth="200"
-                Margin="0,16,0,16"
-                Foreground="Red"
-                ItemsSource="{Binding ItemsList}"
-                SelectedIndex="{Binding SelectedIndex}"
-                SelectedItem="{Binding SelectedItem, UpdateSourceTrigger=PropertyChanged}"
-                Style="{StaticResource MaterialDesignNavigationPrimaryListBox}">
-                <ListBox.Resources>
-                    <Style BasedOn="{StaticResource MaterialDesignScrollBarMinimal}" TargetType="ScrollBar" />
-                </ListBox.Resources>
+            <ListBox MinWidth="200"
+                     Margin="0,16,0,16"
+                     ItemTemplate="{StaticResource GeneralListTemplate}"
+                     ItemsSource="{Binding Items}"
+                     SelectedIndex="{Binding SelectedIndex}"
+                     Style="{StaticResource MaterialDesignNavigationPrimaryListBox}">
                 <i:Interaction.Triggers>
                     <i:EventTrigger EventName="SelectionChanged">
-                        <i:InvokeCommandAction Command="{Binding OpenCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}}" />
+                        <i:InvokeCommandAction Command="{Binding NavigateCommand}"
+                                               CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType={x:Type ListBox}}}" />
                     </i:EventTrigger>
                 </i:Interaction.Triggers>
             </ListBox>

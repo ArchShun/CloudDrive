@@ -92,7 +92,7 @@ public class Node<T> : IEnumerable<Node<T>>
         var paths = path.Replace("\\", "/").Trim('/').Split('/');
         return GetNode(paths);
     }
-
+ 
     public bool TryGetNode(string path, out Node<T>? node)
     {
         node = null;

@@ -23,21 +23,21 @@ public class BDCloudDriveTest
         _provider = new(memory, logger);
     }
 
- 
+
     [TestMethod("删除文件夹")]
     public void TestDeleteDirAsync()
     {
         var path = new PathInfo("/apps/test/");
         var res = _provider.DeleteDirAsync(path).Result;
-        Assert.IsTrue(res);
+        Assert.IsTrue(res.IsSuccess);
     }
 
     [TestMethod("删除多个文件夹")]
     public void TestDeleteDirAsyncMutl()
     {
-        var paths = new PathInfo[] { new PathInfo("/apps/test/loc_dir") ,new PathInfo("/apps/test/no") };
+        var paths = new PathInfo[] { new PathInfo("/apps/test/loc_dir"), new PathInfo("/apps/test/no") };
         var res = _provider.DeleteDirAsync(paths).Result;
-        Assert.IsTrue(res);
+        Assert.IsTrue(res.IsSuccess);
     }
 
     [TestMethod("上传文件夹")]
@@ -63,7 +63,7 @@ public class BDCloudDriveTest
         var path = new PathInfo("/apps/test/__remote_lock__");
         var dest = new PathInfo("/apps/__remote_lock__");
         var res = _provider.MoveAsync(path, dest).Result;
-        Assert.IsTrue(res);
+        Assert.IsTrue(res.IsSuccess);
     }
     [TestMethod("移动文件夹")]
     public void TestMoveDirAsync()
@@ -71,16 +71,28 @@ public class BDCloudDriveTest
         var path = new PathInfo("/apps/test/");
         var dest = new PathInfo("/apps/test_move/test");
         var res = _provider.MoveAsync(path, dest).Result;
-        Assert.IsTrue(res);
+        Assert.IsTrue(res.IsSuccess);
     }
 
     [TestMethod("下载文件夹")]
-    public void Test()
+    public void TestDownloadDirAsync()
     {
         PathInfo path = new PathInfo("/apps/test");
         PathInfo dest = (PathInfo)Path.GetFullPath("Test_download_dir");
+        var res = _provider.DownloadDirAsync(path, dest).Result;
+        foreach (var item in res)
+        {
+            Assert.IsTrue(item.IsSuccess);
+        }
+    }
+
+    [TestMethod("下载文件")]
+    public void TestDownloadAsync()
+    {
+        PathInfo path = new PathInfo("/apps/test/big.txt");
+        PathInfo dest = (PathInfo)Path.GetFullPath(@"big.txt");
         var res = _provider.DownloadAsync(path, dest).Result;
-        Assert.IsTrue(res);
+        Assert.IsTrue(res.IsSuccess);
     }
 }
 

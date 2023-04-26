@@ -12,7 +12,8 @@
             </ResourceDictionary.MergedDictionaries>
             <!--  文件名称列样式  -->
             <DataTemplate x:Key="ItemListNameCol">
-                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                <StackPanel VerticalAlignment="Center"
+                            Orientation="Horizontal">
                     <materialDesign:PackIcon Width="20"
                                              Height="20"
                                              Kind="{Binding Icon}" />
@@ -31,46 +32,48 @@
 
             <!--  文件相关的上下菜单项  -->
             <CompositeCollection x:Key="FileContextMenuItems">
-                <MenuItem Command="{Binding SynchronizItemCommand}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
-                          Header="同步"
+                <MenuItem Header="同步"
+                          Command="{Binding DataContext.SynchronizItemCommand}"
+                          CommandParameter="{Binding SelectedItem}"
                           Icon="CloudDownloadOutline"
                           Template="{StaticResource MenuItemTemplate}" />
-                <MenuItem Command="{Binding RenameCommand}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
-                          Header="重命名"
+                <MenuItem Header="重命名"
+                          Command="{Binding DataContext.RenameCommand}"
+                          CommandParameter="{Binding SelectedItem}"
                           Icon="RenameOutline"
                           Template="{StaticResource MenuItemTemplate}" />
-                <MenuItem Command="{Binding DeleteCommand}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
-                          Header="删除"
+                <MenuItem Header="删除"
+                          Command="{Binding DataContext.DeleteCommand}"
+                          CommandParameter="{Binding SelectedItem}"
                           Icon="FolderEditOutline"
                           Template="{StaticResource MenuItemTemplate}" />
-                <MenuItem Command="{Binding IgnoreCommand}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=SelectedItem}"
-                          Header="排除"
+                <MenuItem Header="排除"
+                          Command="{Binding DataContext.IgnoreCommand}"
+                          CommandParameter="{Binding SelectedItem}"
                           Icon="CloudCancelOutline"
                           Template="{StaticResource MenuItemTemplate}" />
             </CompositeCollection>
 
             <!--  通用上下文菜单项  -->
-            <CompositeCollection x:Key="GenericContextMenuItems" x:Shared="False">
-                <MenuItem Command="{Binding CreateDirCommand}"
-                          Header="新建文件夹"
+            <CompositeCollection x:Key="GenericContextMenuItems"
+                                 x:Shared="False">
+                <MenuItem Header="新建文件夹"
+                          Command="{Binding CreateDirCommand}"
                           Icon="FolderPlusOutline"
                           Template="{StaticResource MenuItemTemplate}" />
-                <MenuItem Command="{Binding SynchronizAllCommand}"
-                          Header="全部同步"
-                          Icon="FileUploadOutline"
+                <MenuItem Header="全部同步"
+                          Command="{Binding SynchronizAllCommand}"
+                          Icon="FolderArrowUpDownOutline"
                           Template="{StaticResource MenuItemTemplate}" />
-                <MenuItem Command="{Binding RefreshCommand}"
-                          Header="刷新列表"
+                <MenuItem Header="刷新列表"
+                          Command="{Binding RefreshCommand}"
                           Icon="CloudRefreshOutline"
                           Template="{StaticResource MenuItemTemplate}" />
             </CompositeCollection>
 
             <!--  单元格上下文菜单  -->
-            <ContextMenu x:Key="CellContextMenu" DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}, Path=DataContext}">
+            <ContextMenu x:Key="CellContextMenu"
+                         DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}, Mode=FindAncestor}}">
                 <ContextMenu.ItemsSource>
                     <CompositeCollection>
                         <CollectionContainer Collection="{Binding Source={StaticResource FileContextMenuItems}}" />
@@ -82,8 +85,13 @@
 
 
             <!--  文件列表上下文菜单  -->
-            <ContextMenu x:Key="ContextMenu" ItemsSource="{Binding Source={StaticResource GenericContextMenuItems}}" />
-
+            <ContextMenu x:Key="ContextMenu">
+                <ContextMenu.ItemsSource>
+                    <CompositeCollection>
+                        <CollectionContainer Collection="{Binding Source={StaticResource GenericContextMenuItems}}" />
+                    </CompositeCollection>
+                </ContextMenu.ItemsSource>
+            </ContextMenu>
 
             <!--  单元格样式绑定单元格上下文菜单  -->
             <Style x:Key="CellStyle"
@@ -103,7 +111,41 @@
         </Grid.RowDefinitions>
 
         <!--  标题栏，显示文件路径  -->
-        <local:FileRegionTitleBar />
+        <DockPanel LastChildFill="True">
+            <!--  显示文件路径  -->
+            <ListBox BorderThickness="0"
+                     ItemContainerStyle="{StaticResource ListBoxItemTransparent}"
+                     Style="{StaticResource PathsListStyle}">
+                <ListBox.Resources>
+                    <CollectionViewSource x:Key="CurPath"
+                                          Source="{Binding CurPath, Converter={StaticResource PathInfoConverter}}" />
+                </ListBox.Resources>
+                <ListBox.ItemsSource>
+                    <CompositeCollection>
+                        <ListBoxItem Content="{Binding Title}" />
+                        <CollectionContainer Collection="{Binding Source={StaticResource CurPath}}" />
+                    </CompositeCollection>
+                </ListBox.ItemsSource>
+
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="MouseUp">
+                        <i:InvokeCommandAction Command="{Binding NavDirCommand}"
+                                               CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=SelectedIndex}" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </ListBox>
+
+            <!--  右侧展开控件  -->
+            <Grid HorizontalAlignment="Right"
+                  DockPanel.Dock="Right">
+                <materialDesign:PopupBox Width="30"
+                                         Height="30"
+                                         PlacementMode="BottomAndAlignRightEdges">
+                    <ListBox ItemTemplate="{StaticResource GeneralListItemsStyle}"
+                             ItemsSource="{Binding OperationItems}" />
+                </materialDesign:PopupBox>
+            </Grid>
+        </DockPanel>
 
         <!--  内容栏，显示文件列表  -->
         <DataGrid Grid.Row="1"
@@ -112,28 +154,30 @@
                   Style="{StaticResource FileListViewStyle}">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="MouseDoubleClick">
-                    <i:InvokeCommandAction Command="{Binding OpenDirCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=CurrentItem}" />
+                    <i:InvokeCommandAction Command="{Binding OpenDirCommand}"
+                                           CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}, Path=CurrentItem}" />
                 </i:EventTrigger>
             </i:Interaction.Triggers>
 
             <DataGrid.Columns>
-                <DataGridTemplateColumn Width="2*"
+                <DataGridTemplateColumn Header="名称"
+                                        Width="2*"
                                         CellStyle="{StaticResource CellStyle}"
                                         CellTemplate="{StaticResource ItemListNameCol}"
-                                        Header="名称"
                                         Selector.IsSelected="False" />
-                <DataGridTextColumn Width="2*"
+                <DataGridTextColumn Header="本地修改时间"
+                                    Width="2*"
                                     Binding="{Binding LocalUpdate, Converter={StaticResource DataTimeConverter}}"
-                                    Header="本地修改时间" />
-                <DataGridTextColumn Width="2*"
+                                    CellStyle="{StaticResource CellStyle}" />
+                <DataGridTextColumn Header="云端修改时间"
+                                    Width="2*"
                                     Binding="{Binding RemoteUpdate, Converter={StaticResource DataTimeConverter}}"
-                                    CellStyle="{StaticResource CellStyle}"
-                                    Header="云端修改时间" />
+                                    CellStyle="{StaticResource CellStyle}" />
 
-                <DataGridTextColumn Width="*"
+                <DataGridTextColumn Header="大小"
+                                    Width="*"
                                     Binding="{Binding Size}"
-                                    CellStyle="{StaticResource CellStyle}"
-                                    Header="大小" />
+                                    CellStyle="{StaticResource CellStyle}" />
             </DataGrid.Columns>
         </DataGrid>
 

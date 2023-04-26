@@ -1,5 +1,7 @@
 ﻿using BDCloudDrive.Entities;
+using CloudDriveUI.Configurations;
 using CloudDriveUI.Models;
+using CloudDriveUI.Views;
 using DryIoc;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Options;
@@ -12,19 +14,15 @@ namespace CloudDriveUI.ViewModels;
 
 public class MainWindowViewModel : BindableBase
 {
-    private List<OperationItem> operationItems;
     private string title;
     private UserInfo? userInfo;
     public ISnackbarMessageQueue MainSnackbarMessageQueue { get; set; }
 
-    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, ISnackbarMessageQueue snackbarMessageQueue)
+    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, ISnackbarMessageQueue snackbarMessageQueue,AppConfiguration appConfiguration)
     {
         title = "CloudDrive";
-        operationItems = new List<OperationItem>()
-        {
-            new OperationItem() { Name = "个人中心", Icon = "AccountCogOutline" }
-        };
         regionManager.RegisterViewWithRegion("NavigateRegion", "NavigationBar");
+
         UserInfo = Task.Run(() => cloudDrive.GetUserInfoAsync()).Result;
 
         MainSnackbarMessageQueue = snackbarMessageQueue;
@@ -35,12 +33,7 @@ public class MainWindowViewModel : BindableBase
         set { title = value; RaisePropertyChanged(); }
     }
 
-
-    public List<OperationItem> OperationItems
-    {
-        get { return operationItems; }
-        set { operationItems = value; RaisePropertyChanged(); }
-    }
+  
 
     public UserInfo? UserInfo
     {

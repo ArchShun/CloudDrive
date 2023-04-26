@@ -1,15 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
+using Path = System.IO.Path;
 
 namespace CloudDrive.Entities;
 
 public class PathInfo
 {
-    private string _data = "";
+
+    private List<string> _data = new();
     private static readonly Regex _separatorRegex = new(@"[\\/]+");
-    private bool _readonly = false;
+    private bool _locked = false;
 
 
     public char Separator { get; private set; } = Path.DirectorySeparatorChar;
@@ -18,18 +20,18 @@ public class PathInfo
     public PathInfo() { }
     public PathInfo(string path)
     {
-        _data = path;
+        _data = _separatorRegex.Split(path).Where(e => !string.IsNullOrEmpty(e)).ToList();
     }
 
     public PathInfo(IEnumerable<string> paths)
     {
-        _data = string.Join(Separator, paths);
+        _data = paths.SelectMany(path => _separatorRegex.Split(path).Where(e => !string.IsNullOrEmpty(e))).ToList();
     }
     #endregion
 
     public PathInfo Lock()
     {
-        _readonly = true;
+        _locked = true;
         return this;
     }
 
@@ -43,7 +45,7 @@ public class PathInfo
     public string GetFullPath(bool startWithSeparator = false, bool endWithSeparator = false, char? separator = null)
     {
         separator ??= Separator;
-        var res = _separatorRegex.Replace(_data, separator.ToString()!).Trim((char)separator);
+        var res = string.Join((char)separator, _data);
         if (startWithSeparator) res = separator + res;
         if (endWithSeparator) res += separator;
         return res;
@@ -54,7 +56,8 @@ public class PathInfo
     /// <returns></returns>
     public string GetName(bool withExt = true)
     {
-        var name = GetFullPath().Split(Separator)[^1] ?? "";
+        if (_data.Count == 0) return "";
+        string name = _data[^1];
         return withExt ? name : name.Split('.')[0];
     }
     /// <summary>
@@ -66,7 +69,7 @@ public class PathInfo
     public string GetParentPath(bool startWithSeparator = false, bool endWithSeparator = false, char? separator = null)
     {
         separator ??= Separator;
-        var res = string.Join((char)separator, GetFullPath(separator: separator).Split('\\', '/')[..^1]);
+        var res = string.Join((char)separator, _data.Take(_data.Count - 1));
         if (startWithSeparator) res = separator + res;
         if (endWithSeparator) res += separator;
         return res;
@@ -88,7 +91,7 @@ public class PathInfo
     /// <returns></returns>
     public PathInfo Duplicate()
     {
-        return new PathInfo(_data);
+        return new PathInfo() { _data = _data.ToList() };
     }
     /// <summary>
     /// 拼接路径
@@ -98,10 +101,7 @@ public class PathInfo
     /// <returns></returns>
     public PathInfo Join(string path, bool duplicate = true)
     {
-        if (duplicate) return new PathInfo(_data + Separator + path);
-        else if (_readonly) throw new InvalidOperationException();
-        else _data += Separator + path;
-        return this;
+        return Join(new PathInfo(path), duplicate);
     }
     /// <summary>
     /// 拼接路径
@@ -111,7 +111,15 @@ public class PathInfo
     /// <returns></returns>
     public PathInfo Join(PathInfo path, bool duplicate = true)
     {
-        return Join(path.GetFullPath(), duplicate);
+        if (duplicate)
+        {
+            var tmp = Duplicate();
+            tmp._data.AddRange(path._data);
+            return tmp;
+        }
+        else if (_locked) throw new InvalidOperationException("路径已锁定");
+        else _data.AddRange(path._data);
+        return this;
     }
     /// <summary>
     /// 拼接路径
@@ -121,7 +129,7 @@ public class PathInfo
     /// <returns></returns>
     public PathInfo Join(IEnumerable<string> paths, bool duplicate = true)
     {
-        return Join(string.Join(Separator, paths), duplicate);
+        return Join(new PathInfo(paths), duplicate);
     }
     /// <summary>
     /// 获取相对路径
@@ -130,11 +138,10 @@ public class PathInfo
     /// <returns></returns>
     public PathInfo GetRelative(PathInfo basePath)
     {
-        var arr1 = GetFullPath(separator: Separator).Split(Separator);
-        var arr2 = basePath.GetFullPath(separator: Separator).Split(Separator);
+        var _base_data = basePath._data;
         int i = 0;
-        while (i < arr1.Length && i < arr2.Length && arr1[i] == arr2[i]) i++;
-        return new PathInfo(arr1[i..]);
+        while (i < _data.Count && i < _base_data.Count && _data[i] == _base_data[i]) i++;
+        return new PathInfo() { _data = _data.Skip(i).ToList() };
     }
 
     public PathInfo GetRelative(string basePath)
@@ -152,4 +159,8 @@ public class PathInfo
         return info.GetFullPath();
     }
 
+    public override string? ToString()
+    {
+        return GetFullPath();
+    }
 }

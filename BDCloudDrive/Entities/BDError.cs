@@ -12,7 +12,7 @@ public class BDError : Exception
     {
         Errno = errno;
     }
-    private static string GetMsg(int errno, object? msg = null)
+    public static string GetMsg(int errno, object? msg = null)
     {
         var tmp = errno switch
         {

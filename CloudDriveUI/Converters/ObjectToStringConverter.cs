@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Data;
 
 namespace CloudDriveUI.Converters;
@@ -11,7 +12,7 @@ namespace CloudDriveUI.Converters;
 public class ObjectToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
+   {
         var str = (string)value;
         return str;
     }
