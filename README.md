@@ -7,9 +7,8 @@
 ![输入图片说明](https://foruda.gitee.com/images/1683522780884123685/7c25d7ba_8170626.jpeg "00.jpg")
 
 #### 使用说明
-1.  解压直接运行 CloudDriveUI.exe 文件
-2.  首次允许需要申请授权许可
-3.  授权许可加密保持在本地
+- 解压直接运行 CloudDriveUI.exe 文件
+- 首次允许需要申请授权许可
 
 #### 框架说明
 - WPF .Net Core 7
