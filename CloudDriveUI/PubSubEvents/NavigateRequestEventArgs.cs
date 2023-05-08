@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CloudDriveUI.PubSubEvents;
+﻿namespace CloudDriveUI.PubSubEvents;
 
 internal class NavigateRequestEventArgs
 {
@@ -15,7 +9,7 @@ internal class NavigateRequestEventArgs
         Name = name;
     }
 
-    public NavigateRequestEventArgs(string name,params KeyValuePair<string, object>[] pairs) : this(name)
+    public NavigateRequestEventArgs(string name, params KeyValuePair<string, object>[] pairs) : this(name)
     {
         Params = pairs.ToList();
     }

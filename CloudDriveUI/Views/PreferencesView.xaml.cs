@@ -1,7 +1,4 @@
-﻿using Prism.Commands;
-using Prism.Events;
-using System.Windows;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace CloudDriveUI.Views;
 
@@ -12,6 +9,6 @@ public partial class PreferencesView : UserControl
 {
     public PreferencesView()
     {
-        InitializeComponent();       
+        InitializeComponent();
     }
 }

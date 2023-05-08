@@ -62,7 +62,7 @@ public interface IFileManager
     /// <param name="path">文件路径</param>
     /// <param name="dest">上传到云盘路径</param>
     /// <returns></returns>
-    public Task<ResponseMessage> UploadAsync(PathInfo path, PathInfo dest);
+    public Task<UploadResponseMessage> UploadAsync(PathInfo path, PathInfo dest);
 
     /// <summary>
     /// 下载
@@ -83,12 +83,12 @@ public interface IFileManager
     /// 创建文件夹
     /// </summary>
     /// <param name="path">文件夹路径</param>
-    public Task<ResponseMessage> CreateDirectoryAsync(PathInfo path);
+    public Task<UploadResponseMessage> CreateDirectoryAsync(PathInfo path);
     /// <summary>
     /// 上传文件夹
     /// </summary>
     /// <param name="src">本地文件夹</param>
     /// <param name="dest">目标文件夹</param>
     /// <returns>上传成功的文件</returns>
-    public Task<IEnumerable<ResponseMessage>> UploadDirAsync(PathInfo src, PathInfo dest);
+    public Task<IEnumerable<UploadResponseMessage>> UploadDirAsync(PathInfo src, PathInfo dest);
 }

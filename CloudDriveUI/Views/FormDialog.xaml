@@ -1,11 +1,12 @@
 ﻿<UserControl
-    x:Class="CloudDriveUI.Views.ListDialog"
+    x:Class="CloudDriveUI.Views.FormDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:prism="http://prismlibrary.com/"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:system="clr-namespace:System;assembly=mscorlib"
     xmlns:wpf="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
     Width="450"
@@ -22,20 +23,20 @@
             <RowDefinition />
             <RowDefinition />
         </Grid.RowDefinitions>
-        <ListBox
+        <ListBox Name="Fields"  
             HorizontalContentAlignment="Stretch"
             ItemContainerStyle="{StaticResource ListBoxItemTransparent}"
-            ItemsSource="{Binding ListItems}">
+            ItemsSource="{Binding }">
 
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <TextBox
-                        Margin="0,6"
+                    <TextBox  TextChanged="TextBox_TextChanged"
+                        Margin="0,0,0,12" 
                         VerticalAlignment="Center"
                         materialDesign:HintAssist.Hint="{Binding Key}"
-                        FontSize="18"
+                        FontSize="18" 
                         Style="{StaticResource MaterialDesignFloatingHintTextBox}"
-                        Text="{Binding Value}" />
+                        Text="{Binding Path=Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True,NotifyOnValidationError=True}" />
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
@@ -43,9 +44,9 @@
             Grid.Row="1"
             HorizontalAlignment="Right"
             Orientation="Horizontal">
-            <Button
+            <Button Name="Submit"
                 Command="{x:Static wpf:DialogHost.CloseDialogCommand}"
-                IsDefault="True"
+                IsDefault="True" 
                 Style="{StaticResource MaterialDesignFlatButton}">
                 <Button.CommandParameter>
                     <system:Boolean>True</system:Boolean>

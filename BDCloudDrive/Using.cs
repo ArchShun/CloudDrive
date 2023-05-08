@@ -13,3 +13,6 @@ global using System.IO;
 
 global using System.Text.RegularExpressions;
 global using System.Windows;
+
+global using System.Net.Http;
+global using System.Text;

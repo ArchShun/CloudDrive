@@ -1,26 +1,15 @@
 ﻿using BDCloudDrive.Entities;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Win32;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
-using System.Security.Policy;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Xml.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BDCloudDrive;
 
@@ -30,7 +19,6 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     private static readonly HttpClient client = new();
 
     private readonly IMemoryCache cache;
-    private readonly ILogger logger;
     private readonly BDConfig config;
     private UserInfo? userInfo;
     private bool hasAuthorize = false;
@@ -38,11 +26,10 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     private static Regex AccessTokenRegex => new Regex("(?<=access_token=).*?(?=&)");
 
 
-    public BDCloudDriveProvider(IMemoryCache cache, ILogger<BDCloudDriveProvider> logger)
+    public BDCloudDriveProvider(IMemoryCache cache)
     {
         this.cache = cache;
-        this.logger = logger;
-        config = BDConfig.Create();
+        config = BDConfig.Load();
     }
 
     private string AccessToken
@@ -251,7 +238,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     /// <param name="path">文件夹路径，已存在时直接返回冲突</param>
     /// <returns></returns>
     /// <exception cref="BDError">内部错误</exception>
-    public async Task<ResponseMessage> CreateDirectoryAsync(PathInfo path)
+    public async Task<UploadResponseMessage> CreateDirectoryAsync(PathInfo path)
     {
         CloudFileInfo? result = null;
         var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=create&access_token={AccessToken}";
@@ -269,9 +256,9 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         }
         catch (Exception ex)
         {
-            return new ResponseMessage(false, ex.Message);
+            return new UploadResponseMessage(false, errMessage: ex.Message);
         }
-        return new ResponseMessage(true);
+        return new UploadResponseMessage(true, result);
     }
 
     public void Dispose()
@@ -283,7 +270,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     #region 获取文件信息
     public async Task<CloudFileInfo?> GetFileInfoAsync(PathInfo path)
     {
-        var key = "CloudFileListInfo_" + path.GetFullPath(separator: '/');
+        var key = "CloudFileInfo_" + path.GetFullPath(separator: '/');
         // 如果缓存中读取 ListInfo 失败，则重新下载到缓存
         if (!cache.TryGetValue(key, out CloudFileInfo? info))
         {
@@ -306,19 +293,25 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         }
         return info;
     }
+    private void AddFileInfoCache(IEnumerable<CloudFileInfo> infos)
+    {
+        foreach (var info in infos)
+            AddFileInfoCache(info);
+    }
+    private void AddFileInfoCache(CloudFileInfo info)
+    {
+        cache.Set("CloudFileInfo_" + info.Path.GetFullPath(separator: '/'), info, new TimeSpan(0, 5, 0));
+    }
 
     public async Task<IEnumerable<CloudFileInfo>> GetFileListAsync(PathInfo path)
     {
-        IEnumerable<CloudFileInfo> ret = new List<CloudFileInfo>();
-        var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=list&dir={path.GetFullPath(true, true, separator: '/')}&access_token={AccessToken}";
+        List<CloudFileInfo> ret = new List<CloudFileInfo>();
+        var url = $"https://pan.baidu.com/rest/2.0/xpan/file?method=list&dir={path.GetFullPath(true, true, separator: '/')}&access_token={AccessToken}&web=1";
         using var response = await client.GetAsync(url);
         var res = await response.Content.ReadFromJsonAsync<FileListResult>();
-        res?.CheckErrnoCode(logger, $"获取{path.GetFullPath()}文件列表失败");
-        ret = res?.List.Select(DataConvert.ToCloudFileInfo) ?? new List<CloudFileInfo>();
-        // 添加到缓存
-        foreach (var e in ret)
-            cache.Set("CloudFileListInfo_" + e.Path.GetFullPath(separator: '/'), e, new TimeSpan(0, 5, 0));
-
+        if (res == null || !res.IsSeccess()) return ret;
+        ret = res?.List.Select(DataConvert.ToCloudFileInfo).ToList() ?? ret;
+        AddFileInfoCache(ret);
         return ret;
     }
 
@@ -326,20 +319,12 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     {
         var url = $"http://pan.baidu.com/rest/2.0/xpan/multimedia?method=listall&path={path.GetFullPath(true, true, separator: '/')}&access_token={AccessToken}&web=1&recursion=1";
         using var response = await client.GetAsync(url);
-        IEnumerable<CloudFileInfo>? result = null;
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            //var str = await response.Content.ReadAsStringAsync();
-            var res = await response.Content.ReadFromJsonAsync<FileListAllResult>();
-            res?.CheckErrnoCode();
-            result = res?.List.Select(DataConvert.ToCloudFileInfo);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, $"获取{path}路径的文件列表失败: {ex.Message}");
-        }
-        return result ?? new List<CloudFileInfo>();
+        IEnumerable<CloudFileInfo> ret = new List<CloudFileInfo>();
+        response.EnsureSuccessStatusCode();
+        var res = await response.Content.ReadFromJsonAsync<FileListAllResult>();
+        if (res == null || !res.IsSeccess()) return ret;
+        ret = res?.List.Select(DataConvert.ToCloudFileInfo) ?? ret;
+        return ret;
     }
 
 
@@ -389,6 +374,9 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         response.Dispose();
         return result;
     }
+
+
+
     /// <summary>
     /// 下载文件
     /// </summary>
@@ -399,7 +387,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
     {
         ResponseMessage result;
         var _dest = dest.GetFullPath(separator: '\\');
-        var key = "CloudFileListInfo_" + src.GetFullPath(separator: '/');
+        var key = "CloudFileInfo_" + src.GetFullPath(separator: '/');
         // 尝试在缓存中找 dlink
         if (!cache.TryGetValue(key, out CloudFileInfo? info) || info == null || !info.XData.ContainsKey("dlink"))
             info = await GetFileInfoAsync(src);
@@ -440,7 +428,9 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
                 : new ResponseMessage(true);
             if (result.IsSuccess)
             {
-                using var fs = File.OpenWrite(_dest);
+                var fileInfo = new FileInfo(_dest);
+                fileInfo.Directory?.Create();
+                using var fs = fileInfo.OpenWrite();
                 foreach (var f in Directory.GetFiles(_tmp_dir).Order())
                 {
                     byte[] bs = await File.ReadAllBytesAsync(f);
@@ -589,12 +579,12 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         else if (res.Errno != 0) throw new BDError(res.Errno);
         return res;
     }
-    public async Task<ResponseMessage> UploadAsync(PathInfo src, PathInfo dest)
+    public async Task<UploadResponseMessage> UploadAsync(PathInfo src, PathInfo dest)
     {
         var _dest = dest.GetFullPath(true, false, '/');
         var info = new FileInfo((string)src);
-        if (info.Length > 1024L * 1024L * 1024L * 4L) return new ResponseMessage(false, "单个上传文件大小超过4GB");
-        else if (AccessToken == null) return new ResponseMessage(false, "未授权");
+        if (info.Length > 1024L * 1024L * 1024L * 4L) return new UploadResponseMessage(false, errMessage: "单个上传文件大小超过4GB");
+        else if (AccessToken == null) return new UploadResponseMessage(false, errMessage: "未授权");
         try
         {
             const int max = 1024 * 1024 * 4; // 分片大小
@@ -625,16 +615,16 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
                 SliceUploadResult sliceUploadResult = await SliceUploadAsync(AccessToken, _dest, preCreateResult.Uploadid, partseq, count < max ? buffer.Take(count).ToArray() : buffer);
             }
             CreateResult createResult = await CreateAsync(AccessToken, _dest, info.Length, isdir, block_list, preCreateResult.Uploadid, rtype, local_ctime: local_ctime, local_mtime: local_mtime);
-            if (createResult != null) return new ResponseMessage(true);
-            else return new ResponseMessage(false, "数据解析错误");
+            if (createResult != null) return new UploadResponseMessage(true, DataConvert.ToCloudFileInfo(createResult));
+            else return new UploadResponseMessage(false, errMessage: "数据解析错误");
         }
         catch (Exception ex)
         {
-            return new ResponseMessage(false, ex.Message);
+            return new UploadResponseMessage(false, errMessage: ex.Message);
         }
     }
 
-    public async Task<IEnumerable<ResponseMessage>> UploadDirAsync(PathInfo src, PathInfo dest)
+    public async Task<IEnumerable<UploadResponseMessage>> UploadDirAsync(PathInfo src, PathInfo dest)
     {
         List<string> dirs = new List<string>(); // 保存空文件夹，用于创建文件夹
         List<string> files = new List<string>(); // 保存待上传的文件
@@ -650,7 +640,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
             foreach (var _dir in Directory.GetDirectories(cur)) stack.Push(_dir);
         }
 
-        List<ResponseMessage> result = new();
+        List<UploadResponseMessage> result = new();
         // 上传文件
         foreach (var file in files)
         {
@@ -664,7 +654,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
             var relativePath = new PathInfo(dir).GetRelative(src.GetParentPath());
             var target = dest.Duplicate().Join(relativePath);
             var res = await CreateDirectoryAsync(target);
-            result.Add(new ResponseMessage());
+            result.Add(res);
         }
         return result;
     }

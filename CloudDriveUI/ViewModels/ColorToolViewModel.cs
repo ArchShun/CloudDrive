@@ -1,7 +1,6 @@
-﻿using Prism.Commands;
+﻿using CloudDriveUI.Configurations;
+using Prism.Commands;
 using System.Windows.Media;
-using CloudDriveUI.Configurations;
-using MaterialDesignThemes.Wpf;
 
 namespace CloudDriveUI.ViewModels;
 

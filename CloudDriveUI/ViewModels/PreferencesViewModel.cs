@@ -3,12 +3,6 @@ using CloudDriveUI.Models;
 using Ookii.Dialogs.Wpf;
 using Prism.Commands;
 using Prism.Events;
-using Prism.Mvvm;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
 
 namespace CloudDriveUI.ViewModels;
 
@@ -31,7 +25,7 @@ public class PreferencesViewModel : BindableBase, INavigationAware
     public DelegateCommand ModifyLocalPathCommand { get; set; }
     public int SelectedIndex
     {
-        get => selectedIndex;  set
+        get => selectedIndex; set
         {
             selectedIndex = value;
             RaisePropertyChanged();

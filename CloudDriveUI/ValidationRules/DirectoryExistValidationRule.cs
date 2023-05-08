@@ -8,7 +8,7 @@ namespace CloudDriveUI.ValidationRules
         public override ValidationResult Validate(object value, CultureInfo cultureInfo)
         {
             var path = value as string;
-            return new ValidationResult(path!=null&&Directory.Exists(path), "目录不存在");
+            return new ValidationResult(path != null && Directory.Exists(path), "目录不存在");
         }
     }
 }

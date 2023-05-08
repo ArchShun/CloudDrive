@@ -1,7 +1,4 @@
 ﻿using CloudDriveUI.Models;
-using CloudDriveUI.PubSubEvents;
-using Prism.Events;
-using System.Runtime.CompilerServices;
 
 namespace CloudDriveUI.Configurations;
 
@@ -12,12 +9,12 @@ public class SynchConfiguration : BindableBase
     {
         get => localPath; set
         {
-            localPath = value;
+            localPath = Path.GetFullPath(value);
             RaisePropertyChanged();
         }
     }
     public string RemotePath { get; set; } = "";
-    public int AutoRefreshSeconds { get; set; } = 60;
+    public int AutoRefreshSeconds { get; set; } = 300;
     public bool AutoRefresh { get; set; } = true;
     public SynchIgnore Ignore { get; set; } = new();
     public bool UseSchedule { get; set; } = true;

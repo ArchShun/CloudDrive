@@ -1,7 +1,7 @@
 ﻿using BDCloudDrive.Utils;
 using CloudDrive.Utils;
 
-namespace CloudDriveUI.Models;
+namespace CloudDriveUI.Domain.Entities;
 
 public class CloudFileItem : FileItemBase
 {
@@ -19,6 +19,7 @@ public class CloudFileItem : FileItemBase
     public override FileType FileType => cloudFileInfo.Category ?? FileType.Unknown;
     public override string Size => IsDir ? "--" : FileUtils.CalSize(cloudFileInfo.Size);
     public DateTime Update => DateTimeUtils.TimeSpanToDateTime(cloudFileInfo.ServerMtime);
+    public PathInfo RemotePath => cloudFileInfo.Path;
 
     #endregion
 

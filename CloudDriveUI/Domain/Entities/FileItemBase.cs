@@ -1,6 +1,6 @@
-﻿namespace CloudDriveUI.Models;
+﻿namespace CloudDriveUI.Domain.Entities;
 
-public abstract class FileItemBase
+public abstract class FileItemBase : BindableBase
 {
     private static readonly Dictionary<FileType, string> icons = new()
     {

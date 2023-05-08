@@ -28,10 +28,10 @@ public class SynchIgnore
     {
         string full = path.GetFullPath();
         return full.EndsWith(".backup", StringComparison.OrdinalIgnoreCase)
-            || Paths.Any(e => full.StartsWith(e.Trim('/','\\'), StringComparison.OrdinalIgnoreCase))
-            || Extensions.Any(e=>full.EndsWith(e, StringComparison.OrdinalIgnoreCase))
+            || Paths.Any(e => full.StartsWith(e.Trim('/', '\\'), StringComparison.OrdinalIgnoreCase))
+            || Extensions.Any(e => full.EndsWith(e, StringComparison.OrdinalIgnoreCase))
             || Names.Any(e => full.EndsWith(e, StringComparison.OrdinalIgnoreCase))
-            || Names.Any(e => e.Equals(path.GetName(),StringComparison.OrdinalIgnoreCase));
+            || Names.Any(e => e.Equals(path.GetName(), StringComparison.OrdinalIgnoreCase));
     }
     /// <summary>
     /// 检查是否被忽略

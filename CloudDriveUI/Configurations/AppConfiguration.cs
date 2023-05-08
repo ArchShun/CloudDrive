@@ -1,8 +1,6 @@
 ﻿using CloudDriveUI.PubSubEvents;
-using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Configuration;
 using Prism.Events;
-using System.Threading.Tasks;
 
 namespace CloudDriveUI.Configurations;
 

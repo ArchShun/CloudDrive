@@ -12,9 +12,7 @@ public class PathInfo
     private List<string> _data = new();
     private static readonly Regex _separatorRegex = new(@"[\\/]+");
     private bool _locked = false;
-
-
-    public char Separator { get; private set; } = Path.DirectorySeparatorChar;
+    private readonly char _separator = Path.DirectorySeparatorChar;
 
     #region 构造方法
     public PathInfo() { }
@@ -29,12 +27,17 @@ public class PathInfo
     }
     #endregion
 
+
     public PathInfo Lock()
     {
         _locked = true;
         return this;
     }
 
+    public string[] GetSegmentPath()
+    {
+        return _data.ToArray();
+    }
 
     /// <summary>
     /// 获取全路径名
@@ -44,7 +47,7 @@ public class PathInfo
     /// <returns></returns>
     public string GetFullPath(bool startWithSeparator = false, bool endWithSeparator = false, char? separator = null)
     {
-        separator ??= Separator;
+        separator ??= _separator;
         var res = string.Join((char)separator, _data);
         if (startWithSeparator) res = separator + res;
         if (endWithSeparator) res += separator;
@@ -68,13 +71,19 @@ public class PathInfo
     /// <returns></returns>
     public string GetParentPath(bool startWithSeparator = false, bool endWithSeparator = false, char? separator = null)
     {
-        separator ??= Separator;
+        separator ??= _separator;
         var res = string.Join((char)separator, _data.Take(_data.Count - 1));
         if (startWithSeparator) res = separator + res;
         if (endWithSeparator) res += separator;
         return res;
     }
-
+    public PathInfo? GetParent()
+    {
+        if (_data.Count == 0) return null;
+        var ret = Duplicate();
+        ret._data = _data.Take(_data.Count - 1).ToList();
+        return ret;
+    }
     /// <summary>
     /// 获取扩展名，包含 . 符号
     /// </summary>

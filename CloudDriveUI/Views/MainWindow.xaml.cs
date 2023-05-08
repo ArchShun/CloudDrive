@@ -1,7 +1,4 @@
-﻿using MaterialDesignThemes.Wpf;
-using Prism.Commands;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 
 namespace CloudDriveUI.Views
 {

@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Linq;
 using System.Windows.Data;
 
 namespace CloudDriveUI.Converters;

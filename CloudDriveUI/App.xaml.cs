@@ -1,27 +1,24 @@
-﻿using CloudDriveUI.Views;
+﻿using CloudDriveUI.Configurations;
+using CloudDriveUI.Domain;
+using CloudDriveUI.Models;
+using CloudDriveUI.Views;
+using DependencyInjection;
+using DryIoc;
+using MaterialDesignThemes.Wpf;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NLog.Extensions.Logging;
+using Prism.DryIoc;
 using Prism.Ioc;
 using System.Windows;
-using Microsoft.Extensions.Configuration;
-using CloudDriveUI.Models;
-using Microsoft.Extensions.DependencyInjection;
-using DependencyInjection;
-using Prism.Commands;
-using System.Text.Json.Nodes;
-using System.Text;
-using NLog.Extensions.Logging;
-using DryIoc;
-using Microsoft.Extensions.Logging;
-using CloudDriveUI.ViewModels;
-using MaterialDesignThemes.Wpf;
-using Prism.DryIoc.Extensions;
-using CloudDriveUI.Configurations;
 
 namespace CloudDriveUI;
 
 /// <summary>
 /// Interaction logic for App.xaml
 /// </summary>
-public partial class App
+public partial class App : PrismApplication
 {
     protected override Window CreateShell()
     {
@@ -46,10 +43,13 @@ public partial class App
         containerRegistry.Register<NavigationBar>();
         containerRegistry.RegisterSingleton<ISnackbarMessageQueue>(() => new SnackbarMessageQueue(TimeSpan.FromSeconds(1)));
         containerRegistry.Register<Login>();
-        //if (AppConfiguration.Load() is AppConfiguration tmp)
-        //    containerRegistry.RegisterInstance(tmp);
-        //else 
-            containerRegistry.RegisterSingleton<AppConfiguration>();
+        containerRegistry.Register<CloudFileItemService>();
+        containerRegistry.Register<SynchFileItemService>();
+        containerRegistry.RegisterSingleton<AppConfiguration>();
+
+        ConfigurationBuilder builder = new ConfigurationBuilder();
+        builder.AddJsonFile("config.json", true, true);
+        IConfigurationRoot root = builder.Build();
 
         // 注册导航
         containerRegistry.RegisterForNavigation<CloudFileView>();
@@ -70,6 +70,7 @@ public partial class App
 
             // 注册缓存
             service.AddMemoryCache();
+
         });
     }
     protected override void OnExit(ExitEventArgs e)

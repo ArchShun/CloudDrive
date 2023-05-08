@@ -1,11 +1,8 @@
 ﻿using CloudDriveUI.Models;
 using ImTools;
-using System.IO;
-using System.Runtime.Intrinsics.Arm;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 
 namespace CloudDrive.Utils;
 

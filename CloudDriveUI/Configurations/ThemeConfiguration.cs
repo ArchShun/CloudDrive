@@ -1,7 +1,7 @@
 ﻿using MaterialDesignColors;
-using System.Windows.Media;
-using MaterialDesignThemes.Wpf;
 using MaterialDesignColors.ColorManipulation;
+using MaterialDesignThemes.Wpf;
+using System.Windows.Media;
 
 namespace CloudDriveUI.Configurations;
 
@@ -84,7 +84,7 @@ public class ThemeConfiguration
     {
         switch (scheme)
         {
-            case ColorScheme.Primary: Primary =color; break;
+            case ColorScheme.Primary: Primary = color; break;
             case ColorScheme.Secondary: Secondary = color; break;
             case ColorScheme.PrimaryForeground: PrimaryForeground = color; break;
             case ColorScheme.SecondaryForeground: SecondaryForeground = color; break;

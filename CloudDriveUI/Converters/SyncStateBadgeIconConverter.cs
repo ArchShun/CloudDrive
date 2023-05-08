@@ -10,20 +10,25 @@ public class SyncStateBadgeIconConverter : IValueConverter
     /// 状态图标
     /// </summary>
     private static readonly Dictionary<SynchState, string> badgeIconDict = new() {
-    {SynchState.Added,"Plus" },
-    { SynchState.Detached,"BlockHelper"},
-    { SynchState.Consistent,"CheckboxMarkedCircleOutline"},
+    { SynchState.Added,"Plus" },
     { SynchState.Modified,"ArrowUpBold"},
+    { SynchState.RemoteAdded ,"CloudPlusOutline"} ,
+    { SynchState.RemoteModified ,"ArrowDownBold"} ,
     { SynchState.Conflict,"ExclamationThick"},
-    {SynchState.ToUpdate ,"ArrowDownBold"} ,
-    {SynchState.Deleted,"CloseThick" }
+    { SynchState.Deleted,"CloseThick" },
+    { SynchState.Unknown,"Help" },
+    { SynchState.Consistent,"CheckboxMarkedCircleOutline"},
+    { SynchState.Detached,"BlockHelper"},
 };
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        var state = value as SynchState?;
-        if (state != null && badgeIconDict.ContainsKey((SynchState)state)) return badgeIconDict[(SynchState)state];
-        else return "";
+        if (value is SynchState state)
+        {
+            foreach (var k in badgeIconDict.Keys)
+                if (state.HasFlag(k)) return badgeIconDict[k];
+        }
+        return "";
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

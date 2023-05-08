@@ -12,7 +12,6 @@ public record CloudFileInfo
     public long Size { get; set; } = 0;
     public long ServerCtime { get; set; } = 0;
     public long ServerMtime { get; set; } = 0;
-
     public long? LocalCtime { get; set; }
     public long? LocalMtime { get; set; }
     public Dictionary<string, object?> XData { get; set; } = new();

@@ -2,6 +2,7 @@
 using CloudDrive.Entities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using NUnit.Framework.Internal;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,9 +21,16 @@ public class BDCloudDriveTest
     {
         IMemoryCache memory = new MemoryCache(new MemoryCacheOptions());
         var logger = new Logger<BDCloudDriveProvider>(LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Debug)));
-        _provider = new(memory, logger);
+        _provider = new(memory);
     }
 
+    [TestMethod("查询文件列表")]
+    public void TestGetFileListAsync()
+    {
+        var path = new PathInfo("/apps/test/");
+        var res = _provider.GetFileListAsync(path).Result;
+        Assert.IsTrue(res.Any());
+    }
 
     [TestMethod("删除文件夹")]
     public void TestDeleteDirAsync()

@@ -18,7 +18,7 @@ public record BDConfig
     /// 读取配置
     /// </summary>
     /// <returns></returns>
-    public static BDConfig Create()
+    public static BDConfig Load()
     {
         FileInfo file = new(path);
         using var fs = file.Create(FileMode.OpenOrCreate, FileSystemRights.Read | FileSystemRights.Write, FileShare.None, 1024, FileOptions.Encrypted, null);
