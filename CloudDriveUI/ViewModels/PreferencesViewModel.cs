@@ -1,6 +1,6 @@
 ﻿using CloudDriveUI.Configurations;
+using CloudDriveUI.Core.Interfaces;
 using CloudDriveUI.Models;
-using Ookii.Dialogs.Wpf;
 using Prism.Commands;
 using Prism.Events;
 
@@ -9,17 +9,18 @@ namespace CloudDriveUI.ViewModels;
 public class PreferencesViewModel : BindableBase, INavigationAware
 {
     private readonly IEventAggregator aggregator;
-
+    private readonly IFolderBrowserDialog folderBrowserDialog;
     private Login userLogin;
     private AppConfiguration appConfig;
     private string? _passwordValidated;
     private int selectedIndex = 0;
 
-    public PreferencesViewModel(Login userLogin, AppConfiguration appConfig, IEventAggregator aggregator)
+    public PreferencesViewModel(Login userLogin, AppConfiguration appConfig, IEventAggregator aggregator,IFolderBrowserDialog folderBrowserDialog)
     {
         this.userLogin = userLogin;
         this.appConfig = appConfig;
         this.aggregator = aggregator;
+        this.folderBrowserDialog = folderBrowserDialog;
         ModifyLocalPathCommand = new(ModifyLocalPath);
     }
     public DelegateCommand ModifyLocalPathCommand { get; set; }
@@ -42,15 +43,11 @@ public class PreferencesViewModel : BindableBase, INavigationAware
     public Login UserLogin { get => userLogin; set { userLogin = value; RaisePropertyChanged(); } }
     private void ModifyLocalPath()
     {
-        var dialog = new VistaFolderBrowserDialog
+        folderBrowserDialog.Description = "选择文件夹";
+        folderBrowserDialog.Multiselect = false;
+        if (folderBrowserDialog.ShowDialog() ?? false)
         {
-            UseDescriptionForTitle = true,
-            Description = "选择文件夹",
-            Multiselect = false,
-        };
-        if (dialog.ShowDialog() ?? false)
-        {
-            appConfig.SynchFileConfig.LocalPath = dialog.SelectedPath;
+            appConfig.SynchFileConfig.LocalPath = folderBrowserDialog.SelectedPath;
         }
     }
 

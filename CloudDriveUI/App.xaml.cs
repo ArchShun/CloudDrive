@@ -1,10 +1,10 @@
 ﻿using CloudDriveUI.Configurations;
+using CloudDriveUI.Core.Interfaces;
 using CloudDriveUI.Domain;
 using CloudDriveUI.Models;
 using CloudDriveUI.Views;
 using DependencyInjection;
 using DryIoc;
-using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -41,7 +41,9 @@ public partial class App : PrismApplication
     {
         // 注册类型
         containerRegistry.Register<NavigationBar>();
-        containerRegistry.RegisterSingleton<ISnackbarMessageQueue>(() => new SnackbarMessageQueue(TimeSpan.FromSeconds(1)));
+        containerRegistry.RegisterScoped<ISnackbarMessage, SnackbarMessage>();
+        containerRegistry.RegisterScoped<IFolderBrowserDialog, FolderBrowserDialog>();
+        containerRegistry.RegisterScoped<ISelectFileDialog, SelectFileDialog>();
         containerRegistry.Register<Login>();
         containerRegistry.Register<CloudFileItemService>();
         containerRegistry.Register<SynchFileItemService>();
@@ -59,8 +61,8 @@ public partial class App : PrismApplication
         containerRegistry.RegisterServices(service =>
         {
             // 注册云盘服务
-            service.AddBDCloudDrive();
-            //service.AddMockCloudDrive();
+            //service.AddBDCloudDrive();
+            service.AddMockCloudDrive();
 
             // 注册日志
             service.AddLogging(builder =>

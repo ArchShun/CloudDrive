@@ -31,11 +31,6 @@ public class MockCloudDriveProvider : ICloudDriveProvider, IDisposable
         return Task.FromResult(response);
     }
 
-    public Task<ResponseMessage> CreateDirectoryAsync(PathInfo path)
-    {
-        return Task.FromResult(response);
-
-    }
 
     public Task<ResponseMessage> DeleteAsync(PathInfo path)
     {
@@ -109,14 +104,18 @@ public class MockCloudDriveProvider : ICloudDriveProvider, IDisposable
         return Task.FromResult(response);
     }
 
-    public Task<ResponseMessage> UploadAsync(PathInfo path, PathInfo dest)
+    Task<UploadResponseMessage> IFileManager.CreateDirectoryAsync(PathInfo path)
     {
-        return Task.FromResult(response);
+        return Task.Delay(1000).ContinueWith((t) => new UploadResponseMessage(true));
     }
 
-    public Task<IEnumerable<ResponseMessage>> UploadDirAsync(PathInfo src, PathInfo dest)
+    Task<UploadResponseMessage> IFileManager.UploadAsync(PathInfo path, PathInfo dest)
     {
-        IEnumerable<ResponseMessage> lst = new List<ResponseMessage>() { response };
-        return Task.FromResult(lst);
+        return Task.Delay(1000).ContinueWith((t) => new UploadResponseMessage(true));
+    }
+
+    Task<IEnumerable<UploadResponseMessage>> IFileManager.UploadDirAsync(PathInfo src, PathInfo dest)
+    {
+        return Task.Delay(1000).ContinueWith((t) => Enumerable.Range(0, 5).Select((i) => new UploadResponseMessage(true))); ;
     }
 }

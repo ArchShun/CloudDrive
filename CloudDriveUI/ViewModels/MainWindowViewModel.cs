@@ -1,5 +1,4 @@
 ﻿using CloudDriveUI.Configurations;
-using MaterialDesignThemes.Wpf;
 using System.Threading.Tasks;
 
 namespace CloudDriveUI.ViewModels;
@@ -8,16 +7,14 @@ public class MainWindowViewModel : BindableBase
 {
     private string title;
     private UserInfo? userInfo;
-    public ISnackbarMessageQueue MainSnackbarMessageQueue { get; set; }
 
-    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, ISnackbarMessageQueue snackbarMessageQueue, AppConfiguration appConfiguration)
+    public MainWindowViewModel(IRegionManager regionManager, ICloudDriveProvider cloudDrive, AppConfiguration appConfiguration)
     {
         title = "CloudDrive";
         regionManager.RegisterViewWithRegion("NavigateRegion", "NavigationBar");
 
-        UserInfo = Task.Run(() => cloudDrive.GetUserInfoAsync()).Result;
+        UserInfo = Task.Run(cloudDrive.GetUserInfoAsync).Result;
 
-        MainSnackbarMessageQueue = snackbarMessageQueue;
     }
     public string Title
     {

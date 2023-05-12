@@ -1,7 +1,7 @@
-﻿using CloudDriveUI.Domain;
+﻿using CloudDriveUI.Core.Interfaces;
+using CloudDriveUI.Domain;
 using CloudDriveUI.Domain.Entities;
 using CloudDriveUI.Models;
-using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using Prism.Commands;
 using System.Threading.Tasks;
@@ -11,13 +11,11 @@ namespace CloudDriveUI.ViewModels;
 
 public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest where T : FileItemBase
 {
-
     protected readonly ICloudDriveProvider cloudDrive;
     protected readonly ILogger logger;
-    protected readonly ISnackbarMessageQueue snackbar;
+    protected readonly ISnackbarMessage snackbar;
     protected readonly IFileItemService<T> itemService;
     private ObservableCollection<T> fileItems = new ObservableCollection<T>();
-    private PathInfo curPath;
 
 
     /// <summary>
@@ -29,17 +27,17 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
     /// </summary>
     public List<GeneralListItem> ContextMenuItems { get; init; } = new List<GeneralListItem>();
 
-    public FileViewBase(ICloudDriveProvider cloudDrive, ILogger logger, ISnackbarMessageQueue snackbarMessageQueue, IFileItemService<T> itemService)
+    public FileViewBase(ICloudDriveProvider cloudDrive, ILogger logger, ISnackbarMessage snackbar, IFileItemService<T> itemService)
     {
-        snackbar = snackbarMessageQueue;
+        this.snackbar = snackbar;
         this.cloudDrive = cloudDrive;
         this.logger = logger;
-        curPath = new PathInfo();
+        CurPath = new PathInfo();
         Title = "";
 
         RenameCommand = new(RenameItem);
         RefreshCommand = new(async () => await RefreshFileItemsAsync());
-        DeleteCommand = new(DeleteItem);
+        DeleteCommand = new(async obj=>await DeleteItem(obj));
 
         OpenDirCommand = new(OpenDirAsync);
         NavDirCommand = new(NavDir);
@@ -48,6 +46,10 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
 
 
     #region 属性
+    /// <summary>
+    /// 正在加载中
+    /// </summary>
+    public bool IsLoading { get; set; } = false;
 
     /// <summary>
     /// 需要显示的文件列表
@@ -58,7 +60,7 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
     /// <summary>
     /// 当前路径
     /// </summary>
-    public PathInfo CurPath { get => curPath; set => SetProperty(ref curPath, value); }
+    public PathInfo CurPath { get; set; }
     /// <summary>
     /// 双击文件夹展开
     /// </summary>
@@ -80,9 +82,11 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
     /// </summary>
     public async Task RefreshFileItemsAsync()
     {
+        IsLoading = true;
         FileItems.Clear();
         IEnumerable<T> res = await itemService.Load(CurPath);
         FileItems.AddRange(res.OrderByDescending(n => n.IsDir));
+        IsLoading = false;
     }
 
     public virtual void OnNavigatedTo(NavigationContext navigationContext)
@@ -115,11 +119,9 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
         var listDialogItem = new FormItem("folder_name", itm.Name, new Predicate<string>(name => FileItems.All(e => e.Name != name)), "文件名已存在");
         var lst = new List<FormItem>() { listDialogItem };
         if (!await DialogHostExtentions.ShowListDialogAsync(lst) || listDialogItem.Value == itm.Name) return;
-        DialogHostExtentions.ShowCircleProgressBar();
         var response = await itemService.Rename(itm, listDialogItem.Value);
-        snackbar.Enqueue($"{itm.Name} 重命名{(response.IsSuccess ? "成功" : "失败")}");
+        snackbar.Show($"{itm.Name} 重命名{(response.IsSuccess ? "成功" : "失败")}");
         _ = RefreshFileItemsAsync();
-        DialogHostExtentions.CloseCircleProgressBar();
     }
 
     /// <summary>
@@ -155,14 +157,14 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
         }
     }
 
-    private async void DeleteItem(object? obj)
+    private async Task DeleteItem(object? obj)
     {
         if (obj is not T itm) return;
-        DialogHostExtentions.ShowCircleProgressBar();
+        IsLoading = true;
         var response = await itemService.DeleteItem(itm);
-        snackbar.Enqueue($"云盘文件 {itm.Name} {(response.IsSuccess ? "删除成功" : "删除失败" + Environment.NewLine + response.ErrMessage)}");
+        snackbar.Show($"云盘文件 {itm.Name} {(response.IsSuccess ? "删除成功" : "删除失败" + Environment.NewLine + response.ErrMessage)}");
         _ = RefreshFileItemsAsync();
-        DialogHostExtentions.CloseCircleProgressBar();
+        IsLoading = false;
     }
 
     public async Task CreateDir()
@@ -172,11 +174,11 @@ public abstract class FileViewBase<T> : BindableBase, IConfirmNavigationRequest 
         {
             if (string.IsNullOrEmpty(dict[0].Value)) return;
             var name = dict[0].Value;
-            DialogHostExtentions.ShowCircleProgressBar();
+            IsLoading = true;
             var res = await itemService.CreateDir(CurPath.Join(name));
             _ = RefreshFileItemsAsync();
-            DialogHostExtentions.CloseCircleProgressBar();
-            snackbar.Enqueue(res.IsSuccess ? "文件夹创建成功" : "文件夹创建失败");
+            IsLoading = false;
+            snackbar.Show(res.IsSuccess ? "文件夹创建成功" : "文件夹创建失败");
         }
     }
 }

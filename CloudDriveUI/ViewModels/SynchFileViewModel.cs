@@ -1,10 +1,10 @@
 ﻿using CloudDriveUI.Configurations;
+using CloudDriveUI.Core.Interfaces;
 using CloudDriveUI.Domain;
 using CloudDriveUI.Domain.Entities;
 using CloudDriveUI.Models;
 using CloudDriveUI.PubSubEvents;
 using EnumsNET;
-using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.Logging;
 using Prism.Commands;
 using Prism.Events;
@@ -16,8 +16,6 @@ namespace CloudDriveUI.ViewModels;
 public class SynchFileViewModel : FileViewBase<SynchFileItem>
 {
     private new readonly SynchFileItemService itemService;
-    private readonly IRegionManager regionManager;
-    private readonly IEventAggregator aggregator;
     private CancellationTokenSource autoSynchCts = new();
     private bool _autoRefleshIsPause = false;
     #region 属性
@@ -34,11 +32,9 @@ public class SynchFileViewModel : FileViewBase<SynchFileItem>
 
     #endregion
 
-    public SynchFileViewModel(SynchFileItemService itemService, ICloudDriveProvider cloudDrive, ILogger<SynchFileViewModel> logger, ISnackbarMessageQueue snackbarMessageQueue, IRegionManager regionManager, IEventAggregator aggregator, AppConfiguration appConfiguration) : base(cloudDrive, logger, snackbarMessageQueue, itemService)
+    public SynchFileViewModel(SynchFileItemService itemService, ICloudDriveProvider cloudDrive, ILogger<SynchFileViewModel> logger, ISnackbarMessage snackbar, EventAggregator aggregator, AppConfiguration appConfiguration) : base(cloudDrive, logger, snackbar, itemService)
     {
         this.itemService = itemService;
-        this.regionManager = regionManager;
-        this.aggregator = aggregator;
         OperationItems = new List<GeneralListItem>()
         {
             new GeneralListItem() { Name = "配置同步", Icon = "CogSyncOutline",Command = new((obj) =>aggregator.GetEvent<NavigateRequestEvent>().Publish(new NavigateRequestEventArgs("PreferencesView", new KeyValuePair<string, object>("SelectedIndex", 1))) ) },
@@ -57,7 +53,7 @@ public class SynchFileViewModel : FileViewBase<SynchFileItem>
     private void Init()
     {
         CurPath = new PathInfo();
-        if (string.IsNullOrEmpty(SynchConfig.LocalPath) || string.IsNullOrEmpty(SynchConfig.RemotePath)) snackbar.Enqueue("还没有配置同步文件夹地址");
+        if (string.IsNullOrEmpty(SynchConfig.LocalPath) || string.IsNullOrEmpty(SynchConfig.RemotePath)) snackbar.Show("还没有配置同步文件夹地址");
         if (!autoSynchCts.IsCancellationRequested)
         {
             autoSynchCts.Cancel();
@@ -133,7 +129,7 @@ public class SynchFileViewModel : FileViewBase<SynchFileItem>
         else
             responses.Add(await itemService.SynchronizItem(itm));
         foreach (var result in responses)
-            snackbar.Enqueue(result.IsSuccess ? "同步成功" : $"同步失败{Environment.NewLine}errMsg:{result.ErrMessage}");
+            snackbar.Show(result.IsSuccess ? "同步成功" : $"同步失败{Environment.NewLine}errMsg:{result.ErrMessage}");
     }
 
     /// <summary>
@@ -145,12 +141,12 @@ public class SynchFileViewModel : FileViewBase<SynchFileItem>
     {
 
         if (obj is not SynchFileItem itm) return;
-        DialogHostExtentions.ShowCircleProgressBar();
+        IsLoading = true;
         _autoRefleshIsPause = true;
         await Synchroniz(itm);
         _ = RefreshFileItemsAsync();
         _autoRefleshIsPause = false;
-        DialogHostExtentions.CloseCircleProgressBar();
+        IsLoading = false;
     }
 
     /// <summary>
@@ -159,13 +155,13 @@ public class SynchFileViewModel : FileViewBase<SynchFileItem>
     /// <returns></returns>
     private async void SynchronizAll()
     {
-        DialogHostExtentions.ShowCircleProgressBar();
+        IsLoading = true;
         _autoRefleshIsPause = true;
         foreach (var itm in FileItems.Where(e => !e.State.HasAnyFlags(SynchState.Consistent | SynchState.Detached)))
             await Synchroniz(itm);
         _autoRefleshIsPause = false;
         _ = RefreshFileItemsAsync();
-        DialogHostExtentions.CloseCircleProgressBar();
+        IsLoading = false;
     }
 
 }
