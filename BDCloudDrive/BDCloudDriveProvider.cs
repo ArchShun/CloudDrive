@@ -1,4 +1,4 @@
-﻿using BDCloudDrive.Entities;
+using BDCloudDrive.Entities;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Win32;
 using System.Collections.Concurrent;
@@ -71,7 +71,7 @@ public partial class BDCloudDriveProvider : ICloudDriveProvider, IDisposable
         // 授权不通过重新获取授权
         else if (!hasAuthorize)
         {
-            var clientId = "byOpxGCWQ3Q5vLVls74NMbv8";
+            var clientId = "应用id";
             var redirect = "oob";
             var url = $"http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id={clientId}&redirect_uri={redirect}&scope=basic,netdisk";
             // 打开默认浏览器访问网址获取授权
