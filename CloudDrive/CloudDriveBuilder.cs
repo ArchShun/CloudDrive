@@ -1,4 +1,4 @@
-﻿using CloudDrive.Interfaces;
+using CloudDrive.Interfaces;
 
 namespace CloudDrive;
 
